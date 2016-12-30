@@ -1,11 +1,10 @@
 if (window.parent) {
-    window.parent.postMessage(__proxy_url, '*');
-    (function(postMessage) {
+    (function(window, postMessage) {
         window.parent.postMessage = function(message, origin) {
             origin = '*';
-            return postMessage.apply(window, [].slice.call(arguments));
+            return postMessage.apply(window.parent, [].slice.call(arguments));
         };
-    })(window.parent.postMessage);
+    })(window, window.parent.postMessage);
 }
 
 var __proxy_get_location = (function(createElement) {
@@ -203,6 +202,14 @@ function proxy_url(original) {
         };
     }
 })();
+(function(sendBeacon) {
+    if (sendBeacon) {
+        navigator.sendBeacon = function(url) {
+            url = proxy_url(url);
+            return sendBeacon.apply(navigator, [].slice.call(arguments));
+        };
+    }
+})(navigator.sendBeacon);
 function __proxy_fix_form(form) {
     var re = new RegExp('^http\\/\\/:' + location.host);
     var url = location.href.replace(/\?__proxy_url=.*/, '?__proxy_url=');
@@ -222,3 +229,17 @@ window.onload = function() {
     // duck duck go replace the url with https and remove the URI
     [].forEach.call(document.getElementsByTagName('form'), __proxy_fix_form);
 };
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.parent) {
+        var title = document.getElementsByTagName('title')[0];
+        var data = {
+            __proxy: {
+                url: __proxy_url
+            }
+        };
+        if (title) {
+            data.__proxy.title = title.textContent || title.text;
+        }
+        window.parent.postMessage(JSON.stringify(data), '*');
+    }
+});

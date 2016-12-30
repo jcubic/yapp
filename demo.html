@@ -57,14 +57,16 @@ $(function() {
         }
     });
     window.onmessage = function(e) {
-        input.val(e.data);
+        try {
+            var data = JSON.parse(e.data);
+            if (data.__proxy) {
+                input.val(data.__proxy.url);
+                if (data.__proxy.title) {
+                    dialog.dialog('option', 'title', data.__proxy.title);
+                }
+            }
+        } catch(e) {}
     };
-    (function(postMessage) {
-        window.postMessage = function(message, origin) {
-            origin = '*';
-            return postMessage.apply(window, [].slice.call(arguments));
-        };
-    })(window.postMessage);
     
 });
     </script>
