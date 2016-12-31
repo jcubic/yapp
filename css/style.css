@@ -1,0 +1,67 @@
+.ui-dialog .ui-dialog-content iframe {
+    border: none;
+    overflow: scroll;
+    width: 100%;
+    height: calc(100% - 28px);
+}
+.ui-dialog .ui-dialog-content input {
+    display: inline;
+    width: calc(100% - 106px);
+    box-sizing: border-box;
+    margin: 5px;
+    padding-left: 7px;
+    -webkit-border-radius: 4px;
+       -moz-border-radius: 4px;
+            border-radius: 4px;
+    outline: none;
+    border: 1px solid #909090;
+}
+.ui-dialog .ui-dialog-content {
+    padding: 0 !important;
+    margin: 0;
+    box-sizing: border-box;
+    overflow: hidden !important;
+}
+.box {
+    height: 100%;
+    width: 100%;
+}
+iframe {
+    background: white;
+}
+.toolbar {
+    background-color: #CECECE;
+}
+.toolbar ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: inline;
+}
+.toolbar li {
+    display: inline;
+}
+.toolbar button {
+    border: none;
+    background: url(icons.svg) no-repeat;
+    background-size: auto 32px;
+    width: 32px;
+    height: 32px;
+    overflow: hidden;
+    text-indent: -999999px;
+    cursor: pointer;
+    outline: none;
+}
+.toolbar button.disabled {
+	filter: alpha(opacity=50);
+	-moz-opacity: 0.5;
+	-khtml-opacity: 0.5;
+	opacity: 0.5;
+    cursor: default;
+}
+.toolbar button.refresh {
+    background-position: -64px 0;
+}
+.toolbar button.forward {
+    background-position: -32px 0;
+}

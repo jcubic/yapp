@@ -43,6 +43,11 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     } else {
         $session_id = md5(time());
         setcookie($cookie_name, $session_id);
+    }
+    if (!is_dir("sessions")) {
+        mkdir("sessions");
+    }
+    if (!is_dir("sessions/" . $session_id)) {
         mkdir("sessions/" . $session_id);
     }
     $cookies = "sessions/" . $session_id . "/cookies.txt";
