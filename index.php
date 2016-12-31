@@ -3,11 +3,14 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-$uri = preg_replace("/__proxy_url=.*/", "__proxy_url=", $_SERVER['REQUEST_URI']);
-if (!preg_match("/\?/", $uri)) {
-    $uri .= "?__proxy_url=";
+
+function get_self() {
+    $uri = preg_replace("/__proxy_url=.*/", "__proxy_url=", $_SERVER['REQUEST_URI']);
+    if (!preg_match("/\?/", $uri)) {
+        $uri .= "?__proxy_url=";
+    }
+    return 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}{$uri}";
 }
-$self = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}{$uri}";
 
 function proxy_url($page_url, $url) {
     $parsed = parse_url($page_url);
@@ -35,8 +38,7 @@ function get_params() {
     }
     return http_build_query($data);
 }
-
-if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__proxy_url']) || $_REQUEST['__proxy_url'] != "") {
+function session_init() {
     $cookie_name = "PROXY_SESSION_ID";
     if (isset($_COOKIE[$cookie_name])) {
         $session_id = $_COOKIE[$cookie_name];
@@ -50,13 +52,19 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     if (!is_dir("sessions/" . $session_id)) {
         mkdir("sessions/" . $session_id);
     }
-    $cookies = "sessions/" . $session_id . "/cookies.txt";
-    if (preg_match("/base64:(.*)/", $_REQUEST['__proxy_url'], $match)) {
+    return $session_id;
+}
+
+$session_id = session_init();
+$self = get_self();
+$cookies = "sessions/" . $session_id . "/cookies.txt";
+if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__proxy_url']) || $_REQUEST['__proxy_url'] != "")) {
+    $url = urldecode($_REQUEST['__proxy_url']);
+    if (preg_match("/base64:(.*)/",$url, $match)) {
         $url = base64_decode($match[1]);
     } else {
         $url = $_REQUEST['__proxy_url'];
     }
-    $url = html_entity_decode($url);
     $params = get_params();
     if ($params) {
         if (preg_match("/\?/", $url)) {
@@ -169,6 +177,12 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     } else {
         echo $page;
     }
+} elseif (isset($_GET['action'])) {
+    if ($_GET['action'] == 'clear_cookies') {
+        if (file_exists($cookies)) {
+            unlink($cookies);
+        }
+    }
 } else {
     ?>
 <!DOCTYPE HTML>
@@ -188,67 +202,10 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <style>
-form {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	-webkit-transform: translate(-50%, -50%);
-	    -ms-transform: translate(-50%, -50%);
-	        transform: translate(-50%, -50%);
-	font-size: 16px;
-}
-input {
-	border: 1px solid #dcdcdc;
-	line-height: 1.3em;
-	font-size: 1em;
-	padding: 0.4em 1em;
-	outline: none;
-	-webkit-box-shadow: inset 0px 1px 0px 0px #ffffff;
-	   -moz-box-shadow: inset 0px 1px 0px 0px #ffffff;
-	        box-shadow: inset 0px 1px 0px 0px #ffffff;
-}
-#query {
-    -webkit-border-radius: 20px 0 0 20px;
-    -moz-border-radius: 20px 0 0 20px;
-	border-radius: 20px 0 0 20px;
-	margin-right: -10px;
-	border-right: none;
-}
-#submit {
-    -webkit-border-radius: 0 20px 20px 0;
-    -moz-border-radius: 0 20px 20px 0;
-	border-radius: 0 20px 20px 0;
-	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #ededed), color-stop(1, #dfdfdf) );
-	background: -moz-linear-gradient( center top, #ededed 5%, #dfdfdf 100% );
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ededed', endColorstr='#dfdfdf');
-	background-color: #ededed;
-	text-indent: 0;
-	display: inline-block;
-	color: #777777;
-	font-family: arial;
-	font-size: 15px;
-	font-weight: bold;
-	font-style: normal;
-	text-decoration: none;
-	text-align: center;
-	text-shadow: 1px 1px 0px #ffffff;
-	cursor: pointer;
-}
-#submit:hover {
-	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #dfdfdf), color-stop(1, #ededed) );
-	background: -moz-linear-gradient( center top, #dfdfdf 5%, #ededed 100% );
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dfdfdf', endColorstr='#ededed');
-	background-color: #dfdfdf;
-}
-#submit:active {
-	position: relative;
-	top: 1px;
-}
-</style>
+    <link href="css/style.css" rel="stylesheet"/>
 </head>
 <body>
-    <form action="" method="GET">
+    <form action="" method="GET" class="search">
         <input id="query" placeholder="https://duckduckgo.com/"/>
         <input id="__proxy_url" type="hidden" name="__proxy_url" value="base64%3AaHR0cHM6Ly9kdWNrZHVja2dvLmNvbS8%3D"/>
         <input id="submit" type="submit" value="go"/>

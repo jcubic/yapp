@@ -6,6 +6,9 @@ if (window.parent) {
         };
     })(window, window.parent.postMessage);
 }
+if (window.top) {
+    self = window.top; // fix for stackoverflow frame check
+}
 __proxy = __proxy || {};
 __proxy.get_location = (function(createElement) {
     return function(href) {
