@@ -15,57 +15,62 @@
     <!--[if IE]>
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
-    <!--
     <link href="css/style.css" rel="stylesheet"/>
-    -->
-    <style>
-.ui-dialog .ui-dialog-content iframe {
-    border: none;
-    overflow: scroll;
-    width: 100%;
-    height: calc(100% - 28px);
-}
-.ui-dialog .ui-dialog-content input {
-    display: block;
-    width: 100%;
-}
-.ui-dialog .ui-dialog-content {
-    padding: 0 !important;
-    margin: 0;
-    box-sizing: border-box;
-    overflow: hidden !important;
-}
-.box {
-    height: 100%;
-    width: 100%;
-}
-iframe {
-    background: white;
-}
-    </style>
     <script src="http://code.jquery.com/jquery-latest.min.js"></script>
     <script src="https://code.jquery.com/ui/1.12.0/jquery-ui.min.js"></script>
     <link href="https://code.jquery.com/ui/1.12.1/themes/dark-hive/jquery-ui.css" rel="stylesheet"/>
     <script>
 $(function() {
     var home = 'https://duckduckgo.com/';
-    var dialog = $('<div><div class="box"><input/><iframe src="./?__proxy_url='+home+'"></iframe></div></div>').appendTo('body').dialog({
-        width: 800,
-        height: 600
+    var $dialog = $('<div><div class="box"><div class="toolbar"><input/></div><iframe src="./?__proxy_url='+home+'"></iframe></div></div>').
+        appendTo('body').dialog({
+            width: 800,
+            height: 600
+        });
+    var $toolbar = $dialog.find('.toolbar');
+    var $ul = $('<ul/>').prependTo($toolbar);
+    var $back = $('<li><button class="back">Back</button></li>').appendTo($ul).find('button');
+    var $forward = $('<li><button class="forward">Forward</button></li>').appendTo($ul).find('button');
+    var $refresh = $('<li><button class="refresh">refresh</button></li>').appendTo($ul).find('button');
+    window.index = 0;
+    var last_index = 0;
+    window.proxy_history = [];
+    var push = true;
+    function toggle_buttons() {
+        $back.toggleClass('disabled', index == 0);
+        $forward.toggleClass('disabled', index == proxy_history.length-1);
+    }
+    toggle_buttons();
+    $ul.on('click', 'button', function(e) {
+        var name = $(this).attr('class').replace(/\s*disabled\s*/, '');
+        if (name == 'back') {
+            index && index--;
+        } else if (name == 'forward') {
+            index < proxy_history.length-1 && index++;
+        }
+        push = false;
+        if (proxy_history[index]) {
+            open(proxy_history[index]);
+        }
+        toggle_buttons();
     });
-    var iframe = dialog.find('iframe');
-    var input = dialog.find('input').val(home).keypress(function(e) {
-        if (e.which == 13) {
-            var url = input.val();
-            if (!url.match(/^http/)) {
-                if (url.match(/^\/\//)) {
-                    url = 'http:' + url;
-                } else {
-                    url = 'http://' + url;
-                }
-                input.val(url);
+    var iframe = $dialog.find('iframe');
+    function open(url) {
+        if (!url.match(/^http/)) {
+            if (url.match(/^\/\//)) {
+                url = 'http:' + url;
+            } else {
+                url = 'http://' + url;
             }
-            iframe[0].setAttribute('src', './?__proxy_url=base64:' + btoa(url));
+        }
+        input.val(url);
+        iframe[0].setAttribute('src', './?__proxy_url=base64:' + btoa(url));
+    }
+    var input = $dialog.find('input').val(home).keypress(function(e) {
+        if (e.which == 13) {
+            push = true;
+            proxy_history = proxy_history.slice(index);
+            open(input.val());
         }
     });
     window.onmessage = function(e) {
@@ -73,9 +78,14 @@ $(function() {
             var data = JSON.parse(e.data);
             if (data.__proxy) {
                 input.val(data.__proxy.url);
-                if (data.__proxy.title) {
-                    dialog.dialog('option', 'title', data.__proxy.title);
+                if (push) {
+                    proxy_history.push(data.__proxy.url);
+                    index = proxy_history.length-1;
                 }
+                if (data.__proxy.title) {
+                    $dialog.dialog('option', 'title', data.__proxy.title);
+                }
+                toggle_buttons();
             }
         } catch(e) {}
     };

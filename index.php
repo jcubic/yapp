@@ -117,14 +117,18 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     $any_tag = "\w+(?:\s*=\s*[\"'][^\"']*[\"'])?";
     $replace = array(
         "/(<(?:$tags)(?:\s+$any_tag)*\s*(?:$attrs)=[\"'])([^'\"]+)([\"'][^>]*>)/" => function($match) use ($self, $url) {
-            $re = "/target\s*=\s*[\"'][^\"']*[\"']/";
+            $url_re = "/^(https?:)?\/\//";
+            $uri_re = "/^(?:\/?(?:[A-Za-z0-9\\-._~!$&'()*+,;=:@]|%[0-9A-Fa-f]{2})+)+$/";
+            $var_plus =  "/^(\$A-Z_][0-9A-Z_\$]*|\s+|\+)+$/"; // some site have string concatenetion src="+e+"
+            $target_re = "/(target\s*=\s*[\"'])[^\"']*([\"'])/";
             if (preg_match("/target=/", $match[1])) {
-                $match[1] = preg_replace($re, 'target="_self"', $match[1]);
+                $match[1] = preg_replace($target_re, '$1_self$2"', $match[1]);
             }
             if (preg_match("/target=/", $match[3])) {
-                $match[3] = preg_replace($re, 'target="_self"', $match[3]);
+                $match[3] = preg_replace($target_re, '$1_self$2', $match[3]);
             }
-            if (preg_match("%^$self%", $match[2]) || preg_match("/^(?:data:|#)/", $match[2])) {
+            if (preg_match("%^$self%", $match[2]) || preg_match("/^(?:data:|#)/", $match[2]) ||
+                !(preg_match($uri_re, $match[2]) || preg_match($url_re, $match[2]) || preg_match($var_plus, $match[2]))) {
                 return $match[1] . $match[2] . $match[3];
             } else {
                 return $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
@@ -143,12 +147,12 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
             return $match[1] . $self . $match[3] . '<input type="hidden" name="__proxy_url" value="' .
                 proxy_url($url, $match[2]) . '"/>';
         }
+        
     );
     header("Content-Type: $content_type");
     if (isset($_GET['__proxy_worker'])) {
         $page = file_get_contents("worker.js") . $page;
     }
-    //header("Content-Type: text/plain");
     if (preg_match("/html|javascript/", $content_type)) { // javacript can contain html in strings
         $page = preg_replace_callback_array($replace, $page);
         if (preg_match("/html/", $content_type)) {
