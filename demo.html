@@ -63,7 +63,6 @@ $(function() {
                 input.val(url);
             }
             iframe[0].setAttribute('src', './?__proxy_url=base64:' + btoa(url));
-            console.log(url);
         }
     });
     window.onmessage = function(e) {

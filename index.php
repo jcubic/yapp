@@ -36,7 +36,7 @@ function get_params() {
     return http_build_query($data);
 }
 
-if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__proxy_url'])) {
+if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__proxy_url']) || $_REQUEST['__proxy_url'] != "") {
     $cookie_name = "PROXY_SESSION_ID";
     if (isset($_COOKIE[$cookie_name])) {
         $session_id = $_COOKIE[$cookie_name];
@@ -93,8 +93,12 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
         "/(@import\s+[\"'])([^'\"]+)([\"'])/" => function($match) use ($self, $url) {
             return $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
         },
-        '/url\(([\'"]?)((?!([\'"]?)data:)[^\)]+)(\1\))/' => function($match) use ($self, $url) {
-            return "url(" . $match[1] . $self . proxy_url($url, $match[2]) . $match[4];
+        '/url\(([\'"]?)([^\)]+)(\1\))/' => function($match) use ($self, $url) {
+            if (preg_match("/^data:/", $match[2])) {
+                return "url(" . $match[1] . $match[2] . $match[3];
+            } else {
+                return "url(" . $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
+            }
         }
     );
 
