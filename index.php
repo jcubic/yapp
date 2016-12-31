@@ -265,7 +265,15 @@ input {
         var query = document.getElementById('query');
         var __proxy_url = document.getElementById('__proxy_url');
         query.addEventListener('keyup', function() {
-            __proxy_url.value = 'base64:' + btoa(query.value);
+            var url = query.value;
+            if (!url.match(/^http/)) {
+                if (url.match(/^\/\//)) {
+                    url = 'http:' + url;
+                } else {
+                    url = 'http://' + url;
+                }
+            }
+            __proxy_url.value = 'base64:' + btoa(url);
         });
     </script>
 </body>

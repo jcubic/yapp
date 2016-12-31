@@ -53,7 +53,17 @@ $(function() {
     var iframe = dialog.find('iframe');
     var input = dialog.find('input').val(home).keypress(function(e) {
         if (e.which == 13) {
-            iframe[0].setAttribute('src', './?__proxy_url=' + input.val());
+            var url = input.val();
+            if (!url.match(/^http/)) {
+                if (url.match(/^\/\//)) {
+                    url = 'http:' + url;
+                } else {
+                    url = 'http://' + url;
+                }
+                input.val(url);
+            }
+            iframe[0].setAttribute('src', './?__proxy_url=base64:' + btoa(url));
+            console.log(url);
         }
     });
     window.onmessage = function(e) {
