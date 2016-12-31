@@ -36,7 +36,7 @@ function get_params() {
     return http_build_query($data);
 }
 
-if (isset($_REQUEST['__proxy_url'])) {
+if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__proxy_url'])) {
     @session_start();
     if (preg_match("/base64:(.*)/", $_REQUEST['__proxy_url'], $match)) {
         $url = base64_decode($match[1]);
@@ -169,4 +169,95 @@ if (isset($_REQUEST['__proxy_url'])) {
     } else {
         echo $page;
     }
+} else {
+    ?>
+<!DOCTYPE HTML>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title>Yapp Proxy demo using jQuery UI dialog and iframe</title>
+    <meta name="Description" content=""/>
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" href="favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="favicon/favicon-16x16.png" sizes="16x16">
+    <link rel="manifest" href="favicon/manifest.json">
+    <link rel="mask-icon" href="favicon/safari-pinned-tab.svg" color="#5bbad5">
+    <link rel="shortcut icon" href="favicon/favicon.ico">
+    <meta name="msapplication-config" content="favicon/browserconfig.xml">
+    <meta name="theme-color" content="#ffffff">
+    <!--[if IE]>
+    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <style>
+form {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	font-size: 16px;
 }
+input {
+	border: 1px solid #dcdcdc;
+	line-height: 1.3em;
+	font-size: 1em;
+	padding: 0.4em 1em;
+	outline: none;
+	-webkit-box-shadow: inset 0px 1px 0px 0px #ffffff;
+	   -moz-box-shadow: inset 0px 1px 0px 0px #ffffff;
+	        box-shadow: inset 0px 1px 0px 0px #ffffff;
+}
+#query {
+    -webkit-border-radius: 20px 0 0 20px;
+    -moz-border-radius: 20px 0 0 20px;
+	border-radius: 20px 0 0 20px;
+	margin-right: -10px;
+	border-right: none;
+}
+#submit {
+    -webkit-border-radius: 0 20px 20px 0;
+    -moz-border-radius: 0 20px 20px 0;
+	border-radius: 0 20px 20px 0;
+	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #ededed), color-stop(1, #dfdfdf) );
+	background: -moz-linear-gradient( center top, #ededed 5%, #dfdfdf 100% );
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ededed', endColorstr='#dfdfdf');
+	background-color: #ededed;
+	text-indent: 0;
+	display: inline-block;
+	color: #777777;
+	font-family: arial;
+	font-size: 15px;
+	font-weight: bold;
+	font-style: normal;
+	text-decoration: none;
+	text-align: center;
+	text-shadow: 1px 1px 0px #ffffff;
+	cursor: pointer;
+}
+#submit:hover {
+	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #dfdfdf), color-stop(1, #ededed) );
+	background: -moz-linear-gradient( center top, #dfdfdf 5%, #ededed 100% );
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dfdfdf', endColorstr='#ededed');
+	background-color: #dfdfdf;
+}
+#submit:active {
+	position: relative;
+	top: 1px;
+}
+</style>
+</head>
+<body>
+    <form action="" method="GET">
+        <input id="query" placeholder="https://duckduckgo.com/"/>
+        <input id="__proxy_url" type="hidden" name="__proxy_url" value="base64%3AaHR0cHM6Ly9kdWNrZHVja2dvLmNvbS8%3D"/>
+        <input id="submit" type="submit" value="go"/>
+    </form>
+    <script>
+        var query = document.getElementById('query');
+        var __proxy_url = document.getElementById('__proxy_url');
+        query.addEventListener('keyup', function() {
+            __proxy_url.value = 'base64:' + btoa(query.value);
+        });
+    </script>
+</body>
+</html>
+<?php } ?>
