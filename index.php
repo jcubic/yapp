@@ -51,6 +51,7 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     } else {
         $url = $_REQUEST['__proxy_url'];
     }
+    $url = html_entity_decode($url);
     $params = get_params();
     if ($params) {
         if (preg_match("/\?/", $url)) {
@@ -112,7 +113,7 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
         }
     );
     $tags = implode("|", array("a", "script", "link", "iframe", "img", "object"));
-    $attrs = implode("|", array("href", "src", "data", "data-src"));
+    $attrs = implode("|", array("href", "src", "data", "data-src", "data-link")); // data-src and data-link from duckduckgo
     $any_tag = "\w+(?:\s*=\s*[\"'][^\"']*[\"'])?";
     $replace = array(
         "/(<(?:$tags)(?:\s+$any_tag)*\s*(?:$attrs)=[\"'])([^'\"]+)([\"'][^>]*>)/" => function($match) use ($self, $url) {
