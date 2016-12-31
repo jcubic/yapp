@@ -57,7 +57,7 @@ function proxy_url(original) {
         });
     };
 })(window.Image);
-(function(createElement, elements) {
+(function(createElement) {
     function attr(name) {
         return name == 'src' || name == 'href' || name == 'action';
     }
@@ -85,6 +85,7 @@ function proxy_url(original) {
                 }
             },
             get: function(target, name) {
+ 
                 if (name == 'setAttribute') {
                     return function(name, value) {
                         if (attr(name) && !value.match(/^(data:|#)/) && !value.match(param_re)) {
@@ -110,7 +111,7 @@ function proxy_url(original) {
         }
         return src_proxy(element);
     };
-    elements.forEach(function(element) {
+    ["HTMLElement", "DocumentFragment"].forEach(function(element) {
         element = window[element];
         var originals = {
             appendChild: element.prototype.appendChild,
@@ -170,7 +171,7 @@ function proxy_url(original) {
             }
         });
     })();
-})(document.createElement, ["HTMLElement", "DocumentFragment"]);
+})(document.createElement);
 (function(fetch) {
     window.fetch = function(url, options) {
         return fetch.call(null, proxy_url(url), options || {});
@@ -181,7 +182,7 @@ function proxy_url(original) {
         if (node.originalNode) {
             node = node.originalNode;
         }
-        getComputedStyle.call(window, node);
+        return getComputedStyle.apply(window, [].slice.call(arguments));
     };
 })(window.getComputedStyle);
 (function() {
