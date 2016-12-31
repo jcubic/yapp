@@ -124,7 +124,7 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
         "/(<(?:$tags)(?:\s+$any_tag)*\s*(?:$attrs)=[\"'])([^'\"]+)([\"'][^>]*>)/" => function($match) use ($self, $url) {
             $url_re = "/^(https?:)?\/\//";
             $uri_re = "/^(?:\/?(?:[A-Za-z0-9\\-._~!$&'()*+,;=:@]|%[0-9A-Fa-f]{2})+)+$/";
-            $var_plus =  "/^(\$A-Z_][0-9A-Z_\$]*|\s+|\+)+$/"; // some site have string concatenetion src="+e+"
+            $var_plus =  "/^([\$A-Z_][0-9A-Z_\$]*|\s+|\+)+$/i"; // some site have string concatenetion src="+e+"
             $target_re = "/(target\s*=\s*[\"'])[^\"']*([\"'])/";
             if (preg_match("/target=/", $match[1])) {
                 $match[1] = preg_replace($target_re, '$1_self$2"', $match[1]);
@@ -133,7 +133,7 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
                 $match[3] = preg_replace($target_re, '$1_self$2', $match[3]);
             }
             if (preg_match("%^$self%", $match[2]) || preg_match("/^(?:data:|#)/", $match[2]) ||
-                !(preg_match($uri_re, $match[2]) || preg_match($url_re, $match[2]) || preg_match($var_plus, $match[2]))) {
+                !(preg_match($uri_re, $match[2]) || preg_match($url_re, $match[2])) || preg_match($var_plus, $match[2])) {
                 return $match[1] . $match[2] . $match[3];
             } else {
                 return $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
