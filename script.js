@@ -25,7 +25,7 @@ function proxy_url(original) {
         url = original;
     } else if (original.match(/^\/\//)) {
         url = proxy.protocol + original;
-    } else if (original.match(/^\//)) {s
+    } else if (original.match(/^\//)) {
         url = proxy.protocol + '//' + proxy.host + original;
     } else {
         url = __proxy_url + original;
