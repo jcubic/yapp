@@ -89,7 +89,7 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    $proxy_url = 'var __proxy_url="' . $url . '";';
+    $proxy_object = 'var __proxy = {url: "' . $url . '"};';
     $style_replace = array(
         "/(@import\s+[\"'])([^'\"]+)([\"'])/" => function($match) use ($self, $url) {
             return $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
@@ -108,8 +108,8 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
             $style = preg_replace_callback_array($style_replace, $match[2]);
             return $match[1] . $style . $match[3];
         },
-        "/<head>(?!<script>var __proxy_url)/" => function() use ($proxy_url) {
-            return "<head><script>$proxy_url</script><script src=\"script.js\"></script>";
+        "/<head>(?!<script>var __proxy)/" => function() use ($proxy_object) {
+            return "<head><script>$proxy_object</script><script src=\"script.js\"></script>";
         }
     );
     $tags = implode("|", array("a", "script", "link", "iframe", "img", "object"));
@@ -151,28 +151,6 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     //header("Content-Type: text/plain");
     if (preg_match("/html|javascript/", $content_type)) { // javacript can contain html in strings
         $page = preg_replace_callback_array($replace, $page);
-        if ($page == NULL) {
-            switch(preg_last_error()) {
-                case PREG_INTERNAL_ERROR:
-                    echo "PREG_INTERNAL_ERROR";
-                    break;
-                case PREG_BACKTRACK_LIMIT_ERROR:
-                    echo "PREG_BACKTRACK_LIMIT_ERROR";
-                    break;
-                case PREG_RECURSION_LIMIT_ERROR:
-                    echo "PREG_RECURSION_LIMIT_ERROR";
-                    break;
-                case PREG_BAD_UTF8_ERROR:
-                    echo "PREG_BAD_UTF8_ERROR";
-                    break;
-                case PREG_BAD_UTF8_OFFSET_ERROR:
-                    echo "PREG_BAD_UTF8_OFFSET_ERROR";
-                    break;
-                case PREG_JIT_STACKLIMIT_ERROR:
-                    echo "PREG_JIT_STACKLIMIT_ERROR";
-                    break;
-            }
-        }
         if (preg_match("/html/", $content_type)) {
             $page = preg_replace_callback_array($html_replace, $page);
         }
