@@ -2,7 +2,7 @@
     border: none;
     overflow: scroll;
     width: 100%;
-    height: calc(100% - 28px);
+    height: calc(100% - 36px);
 }
 .ui-dialog .ui-dialog-content input {
     display: inline;
