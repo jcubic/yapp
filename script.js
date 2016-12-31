@@ -115,7 +115,8 @@ function proxy_url(original) {
         element = window[element];
         var originals = {
             appendChild: element.prototype.appendChild,
-            removeChild: element.prototype.removeChild
+            removeChild: element.prototype.removeChild,
+            insertBefore: element.prototype.insertBefore
         };
         
         element.prototype.appendChild = function(node) {
@@ -130,19 +131,16 @@ function proxy_url(original) {
             }
             return originals.removeChild.call(this, node);
         };
-    });
-    (function() {
-        var insertBefore = HTMLElement.prototype.insertBefore;
-        HTMLElement.prototype.insertBefore = function(newChild, refChild) {
+        element.prototype.insertBefore = function(newChild, refChild) {
             if (newChild && newChild.originalNode) {
                 newChild = newChild.originalNode;
             }
             if (refChild && refChild.originalNode) {
                 refChild = refChild.originalNode;
             }
-            return insertBefore.call(this, newChild, refChild);
+            return originals.insertBefore.call(this, newChild, refChild);
         };
-    })();
+    });
     (function() {
         ['getElementById', 'querySelector'].forEach(function(fun) {
             if (document[fun]) {
