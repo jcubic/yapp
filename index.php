@@ -177,10 +177,13 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
     } else {
         echo $page;
     }
-} elseif (isset($_GET['action'])) {
-    if ($_GET['action'] == 'clear_cookies') {
+} elseif (isset($_REQUEST["action"])) {
+    if ($_REQUEST["action"] == "clear_cookies") {
+        //echo $cookies;
         if (file_exists($cookies)) {
-            unlink($cookies);
+            echo unlink($cookies) ? "true" : "false";
+        } else {
+            echo "false";
         }
     }
 } else {
@@ -203,12 +206,14 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
     <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
     <link href="css/style.css" rel="stylesheet"/>
+    <script src="https://cdn.rawgit.com/github/fetch/master/fetch.js"></script>
 </head>
 <body>
     <form action="" method="GET" class="search">
         <input id="query" placeholder="https://duckduckgo.com/"/>
         <input id="__proxy_url" type="hidden" name="__proxy_url" value="base64%3AaHR0cHM6Ly9kdWNrZHVja2dvLmNvbS8%3D"/>
         <input id="submit" type="submit" value="go"/>
+        <button class="button">clear cookies</button>
     </form>
     <script>
         var query = document.getElementById('query');
@@ -223,6 +228,14 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
                 }
             }
             __proxy_url.value = 'base64:' + btoa(url);
+        });
+        document.querySelector('.button').addEventListener('click', function(e) {
+            fetch('./?action=clear_cookies', {credentials: "same-origin"}).then(function(response) {
+                return response.json();
+            }).then(function(data) {
+                alert('cookies ' + (!data ? 'not ' : '') + 'cleared');
+            });
+            e.preventDefault();
         });
     </script>
 </body>
