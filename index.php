@@ -37,7 +37,15 @@ function get_params() {
 }
 
 if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__proxy_url'])) {
-    @session_start();
+    $cookie_name = "PROXY_SESSION_ID";
+    if (isset($_COOKIE[$cookie_name])) {
+        $session_id = $_COOKIE[$cookie_name];
+    } else {
+        $session_id = md5(time());
+        setcookie($cookie_name, $session_id);
+        mkdir("sessions/" . $session_id);
+    }
+    $cookies = "sessions/" . $session_id . "/cookies.txt";
     if (preg_match("/base64:(.*)/", $_REQUEST['__proxy_url'], $match)) {
         $url = base64_decode($match[1]);
     } else {
@@ -72,8 +80,8 @@ if (isset($_REQUEST['__proxy_url']) && !preg_match("/base64:$/", $_REQUEST['__pr
     curl_setopt($ch, CURLOPT_COOKIESESSION, 1);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
-    curl_setopt($ch, CURLOPT_COOKIEFILE, "cookies/" . session_id());
-    curl_setopt($ch, CURLOPT_COOKIEJAR, "cookies/" . session_id());
+    curl_setopt($ch, CURLOPT_COOKIEFILE, $cookies);
+    curl_setopt($ch, CURLOPT_COOKIEJAR, $cookies);
     curl_setopt($ch, CURLOPT_URL, $url);
     $page = curl_exec($ch);
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
