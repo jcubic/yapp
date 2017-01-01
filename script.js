@@ -13,7 +13,7 @@ __proxy.location_proxy = function(location) {
         }
     });
 };
-__proxy.get_location = (function(createElement) {
+__proxy.parse_url = (function(createElement) {
     return function(href) {
         var l = createElement.call(document, "a");
         l.href = href;
@@ -23,7 +23,7 @@ __proxy.get_location = (function(createElement) {
 if (!__proxy.url) {
     throw new Error('__proxy.url not found');
 }
-__proxy.parsed = __proxy.get_location(__proxy.url);
+__proxy.parsed = __proxy.parse_url(__proxy.url);
 __proxy.is_proxy_url = function(url) {
     return !!url.match(/__proxy_url=(.*)/);
 }
@@ -98,7 +98,7 @@ __proxy.get_url = function(url) {
 __proxy.fix_form = function(form) {
     var re = new RegExp('^http\\/\\/:' + location.host);
     var url = location.href.replace(/\?__proxy_url=.*/, '?__proxy_url=');
-    var action = __proxy.get_location(form.action);
+    var action = __proxy.parse_url(form.action);
     if (action.host == location.host && !form.action.match(/__proxy_url=/)) {
         var input = form.querySelector('[name="__proxy_url"]');
         if (!input) {
@@ -130,6 +130,7 @@ if (window.parent) {
     (function(window, postMessage) {
         window.parent.postMessage = function(message, origin) {
             origin = '*';
+            // some page was sending post message to parent that was failing because of different origin
             return postMessage.apply(window.parent, [].slice.call(arguments));
         };
     })(window, window.parent.postMessage);
