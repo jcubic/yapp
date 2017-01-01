@@ -24,8 +24,56 @@ if (!__proxy.url) {
     throw new Error('__proxy.url not found');
 }
 __proxy.parsed = __proxy.get_location(__proxy.url);
-
+__proxy.is_proxy_url = function(url) {
+    return !!url.match(/__proxy_url=(.*)/);
+}
+__proxy.param = function(obj) {
+    var r20 = /%20/g
+    return Object.keys(obj).map(function(key) {
+        return encodeURIComponent(key) + '=' + encodeURIComponent(obj[key] == null ? "" : obj[key]);
+    }).join('&').replace(r20, '+');
+};
+__proxy.split_proxy_url = function(url) {
+    var arg = url.match(/__proxy_url=(.*)/)[1];
+    var match = decodeURIComponent(arg).match(/base64:([^&]+)&?(.*)/);
+    if (match) {
+        var url = atob(match[1]);
+        var query = Object.assign({}, __proxy. parse_query(url.replace(/[^?]+\??/, '')), __proxy. parse_query(match[2]));
+        return {
+            url: url.replace(/\?.*$/, ''),
+            query: __proxy.param(query)
+        };
+    }
+};
+__proxy. parse_query = function(string) {
+    var query = {};
+    if (string) {
+        var array = string.split('&');
+        for (var i = 0; i < array.length; i++) {
+            var parts = array[i].split('=');
+            name = decodeURIComponent(parts[0]);
+            if (name != '__proxy_url') {
+                query[name] = decodeURIComponent(parts[1] || '').replace(/\+/g, ' ');
+            }
+        }
+    }
+    return query;
+}
 __proxy.absolute_url = function(original) {
+    if (__proxy.is_proxy_url(original)) {
+        var split = __proxy.split_proxy_url(original);
+        if (split) {
+            if (split.query) {
+                if (split.url.match(/\?/)) {
+                    return split.url + '&' + split.query
+                } else {
+                    return split.url + '?' + split.query
+                }
+            } else {
+                return split.url;
+            }
+        }
+    }
     if (original.match(/^http/)) {
         return original;
     } else if (original.match(/^\/\//)) {
@@ -35,7 +83,7 @@ __proxy.absolute_url = function(original) {
     } else {
         return __proxy.url.replace(/[^\/]+$/, '') + original;
     }
-}
+};
 __proxy.get_url = function(url) {
     var base = location.href.replace(/__proxy_url=.*/, '__proxy_url=');
     if (!base.match(/\?/)) {
@@ -62,12 +110,14 @@ __proxy.fix_form = function(form) {
         form.setAttribute('action', url);
     }
 };
-__proxy.post_data = function(url) {
+__proxy.post_data = function(url, options) {
     if (window.parent) {
+        options = options || {};
         var title = document.getElementsByTagName('title')[0];
         var data = {
             __proxy: {
-                url: url || __proxy.url
+                url: url || __proxy.url,
+                replace: !!options.replace
             }
         };
         if (title) {
@@ -348,12 +398,21 @@ if (window.top) {
     }
 })(navigator.sendBeacon);
 (function() {
-    if (history && history.pushState) {
-        var pushState = history.pushState;
-        history.pushState = function(state, title, url) {
-            pushState.apply(history, [].slice.call(arguments));
-            __proxy.post_data(__proxy.absolute_url(url));
-        };
+    if (window.history) {
+        if (history.pushState) {
+            var pushState = history.pushState;
+            history.pushState = function(state, title, url) {
+                pushState.apply(history, [].slice.call(arguments));
+                __proxy.post_data(__proxy.absolute_url(url));
+            };
+        }
+        if (history.replaceState) {
+            var replaceState = history.replaceState;
+            history.replaceState = function(state, title, url) {
+                replaceState.apply(history, [].slice.call(arguments));
+                __proxy.post_data(__proxy.absolute_url(url), {replace: true});
+            };
+        }
     }
 })();
 window.onload = function() {

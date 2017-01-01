@@ -43,19 +43,35 @@ $(function() {
         $back.toggleClass('disabled', index == 0);
         $forward.toggleClass('disabled', index == proxy_history.length-1);
     }
+    function parseQuery(qstr) {
+        var query = {};
+        var a = qstr.split('&');
+        for (var i = 0; i < a.length; i++) {
+            var b = a[i].split('=');
+            name = decodeURIComponent(b[0]);
+            if (name != '__proxy_url') {
+                query[name] = decodeURIComponent(b[1] || '');
+            }
+        }
+        return query;
+    }
     toggle_buttons();
     $ul.on('click', 'button', function(e) {
         var name = $(this).attr('class').replace(/\s*disabled\s*/, '');
-        if (name == 'back') {
-            index && index--;
-        } else if (name == 'forward') {
-            index < proxy_history.length-1 && index++;
+        if (name == 'refresh') {
+            iframe[0].setAttribute('src', iframe[0].contentWindow.location.href);
+        } else {
+            if (name == 'back') {
+                index && index--;
+            } else if (name == 'forward') {
+                index < proxy_history.length-1 && index++;
+            }
+            push = false;
+            if (proxy_history[index]) {
+                open(proxy_history[index]);
+            }
+            toggle_buttons();
         }
-        push = false;
-        if (proxy_history[index]) {
-            open(proxy_history[index]);
-        }
-        toggle_buttons();
     });
     var iframe = $dialog.find('iframe');
     function open(url) {
@@ -79,18 +95,37 @@ $(function() {
         try {
             var data = JSON.parse(e.data);
             if (data.__proxy) {
-                input.val(data.__proxy.url);
-                if (push) {
-                    if (index != proxy_history.length - 1) {
-                        proxy_history = proxy_history.slice(0, index+1);
+                var url = data.__proxy.url;
+                /*
+                try {
+                    var iframe_url = iframe[0].iframe.contentWindow.location.href;
+                    var query = $.param(parseQuery(iframe_url.replace(/[^?]+?/, '')));
+                    if (query) {
+                        if (url.match(/\?/)) {
+                            url += '&' + query;
+                        } else {
+                            url += '?' + query;
+                        }
                     }
-                    if (data.__proxy.url != proxy_history[index]) {
-                        proxy_history.push(data.__proxy.url);
-                        index = proxy_history.length-1;
+                } catch(e) {}
+                */
+                input.val(url);
+                if (push) {
+                    if (data.__proxy.replace) {
+                        proxy_history[index] = url;
+                    } else {
+                        if (index != proxy_history.length - 1) {
+                            proxy_history = proxy_history.slice(0, index+1);
+                        }
+                        if (data.__proxy.url != proxy_history[index]) {
+                            proxy_history.push(url);
+                            index = proxy_history.length-1;
+                        }
                     }
                 } else {
                     push = true;
                 }
+                //console.log(proxy_history.slice());
                 if (data.__proxy.title) {
                     $dialog.dialog('option', 'title', data.__proxy.title);
                 }
