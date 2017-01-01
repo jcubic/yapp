@@ -84,8 +84,10 @@ $(function() {
                     if (index != proxy_history.length - 1) {
                         proxy_history = proxy_history.slice(0, index+1);
                     }
-                    proxy_history.push(data.__proxy.url);
-                    index = proxy_history.length-1;
+                    if (data.__proxy.url != proxy_history[index]) {
+                        proxy_history.push(data.__proxy.url);
+                        index = proxy_history.length-1;
+                    }
                 } else {
                     push = true;
                 }
