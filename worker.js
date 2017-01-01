@@ -1,11 +1,10 @@
 var __proxy = {};
-var getLocation = function(href) {
+__proxy.getLocation = function(href) {
     var l = document.createElement("a");
     l.href = href;
     return l;
 };
-
-function proxy_url(original) {
+__proxy.proxy_url = function(original) {
     var base = __proxy.location.replace(/__proxy_url=.*/, '__proxy_url=');
     var url;
     if (original.match(/^http/)) {
@@ -15,7 +14,7 @@ function proxy_url(original) {
     } else if (original.match(/^\//)) {
         url = __proxy.parsed.protocol + '//' + __proxy.parsed.host + original;
     } else {
-        url = __proxy.url + original;
+        url = __proxy.url.replace(/[^\/]+$/, '') + original;
     }
     if (location.href == original) {
         return original;
@@ -25,8 +24,9 @@ function proxy_url(original) {
 }
 self.addEventListener('message', function message(event) {
     if (event.data.__proxy) {
-        __proxy = event.data.__proxy;
-        __proxy.parsed = getLocation(__proxy.url);
+        __proxy.url = event.data.__proxy.url;
+        __proxy.location = event.data.__proxy.location;
+        __proxy.parsed = __proxy.get_location(__proxy.url);
         (function(fetch) {
             window.fetch = function(url, options) {
                 return fetch.call(window, proxy_url(url), options || {});
@@ -40,3 +40,10 @@ self.addEventListener('message', function message(event) {
         self.removeEventListener('message', message);
     }
 };
+(function(fetch) {
+    if (fetch) {
+        window.fetch = function(url, options) {
+            return fetch.call(null, __proxy.get_url(url), options || {});
+        };
+    }
+})(window.fetch);

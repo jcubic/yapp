@@ -119,7 +119,7 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
             }
         }
     );
-
+    $any_attr = "\w+(?:\s*=\s*[\"'][^\"']*[\"'])?";
     $html_replace = array(
         "/(<style[^>]*>)(.*?)(<\/style>)/s" => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[2]);
@@ -131,11 +131,19 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
         '/(style=(["\']))(((?!\2).)*)(\2)/' => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[3]);
             return $match[1] . $style . $match[4];
+        },
+        "/(<form(?:\s+(?!action)$any_attr)*\s*)((action=[\"'])([^'\"]+)([\"']))?([^>]*>)(?!<input name=\"__proxy_url\")/" => function($match) use ($self, $url) {
+            $input = '<input type="hidden" name="__proxy_url" value="' . proxy_url($url, $match[4]) . '"/>';
+            if ($match[2]) {
+                return $match[1] . $match[3] . $self . $match[5] . $match[6] . $input;
+            } else {
+                return $match[1] . $match[3] . $match[6] . $input;
+            }
         }
     );
     $tags = implode("|", array("a", "script", "link", "iframe", "img", "object"));
     $attrs = implode("|", array("href", "src", "data", "data-src", "data-link")); // data-src and data-link from duckduckgo
-    $any_attr = "\w+(?:\s*=\s*[\"'][^\"']*[\"'])?";
+    
     $replace = array(
         "/([.}; ])location(.href)?\s*=/" => function($match) {
             return $match[1] . "loc.href=";
@@ -164,17 +172,9 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
             }
         },
         "/(<(?:img|source)(?:\s+$any_attr)*\s*srcset=[\"'])([^'\"]+)([\"'])/" => function($match) use ($self, $url) {
-            return $match[1] . preg_replace_callback("/([^\s]+)( [0-9]x,?)?/", function($match) use ($self, $url) {
-                return $self . proxy_url($url, $match[1]) . isset($match[2]) ? " " . $match[2] : "";
+            return $match[1] . preg_replace_callback("/([^\s]+)( [0-9.]+x,?)?/", function($match) use ($self, $url) {
+                return $self . proxy_url($url, $match[1]) . (isset($match[2]) ? $match[2] : "");
             }, $match[2]) . $match[3];
-        },
-        "/(<form(?:\s+(?!action)$any_attr)*\s*)((action=[\"'])([^'\"]+)([\"']))?([^>]*>)(?!<input name=\"__proxy_url\")/" => function($match) use ($self, $url) {
-            $input = '<input type="hidden" name="__proxy_url" value="' . proxy_url($url, $match[4]) . '"/>';
-            if ($match[2]) {
-                return $match[1] . $match[3] . $self . $match[5] . $match[6] . $input;
-            } else {
-                return $match[1] . $match[3] . $match[6] . $input;
-            }
         }
         
     );

@@ -279,7 +279,6 @@ if (window.top) {
         });
     })();
     (function(getComputedStyle) {
-        console.log('getComputedStyle');
         window.getComputedStyle = function(node) {
             node = real_node(node);
             return getComputedStyle.apply(window, [].slice.call(arguments));
