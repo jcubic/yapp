@@ -128,7 +128,7 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
         "/<head>(?!<script>var __proxy)/" => function() use ($proxy_object) {
             return "<head><script>$proxy_object</script><script src=\"script.js\"></script>";
         },
-        "/(style=([\"']))([^\\2]+)(\\2)/" => function($match) use ($style_replace) {
+        '/(style=(["\']))(((?!\2).)*)(\2)/' => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[3]);
             return $match[1] . $style . $match[4];
         }
