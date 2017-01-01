@@ -69,6 +69,7 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
     } else {
         $url = $_REQUEST['__proxy_url'];
     }
+    $url = html_entity_decode($url);
     $params = get_params();
     if ($params) {
         if (preg_match("/\?/", $url)) {
@@ -133,6 +134,7 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
             return $match[1] . $style . $match[4];
         },
         "/(<form(?:\s+(?!action)$any_attr)*\s*)((action=[\"'])([^'\"]+)([\"']))?([^>]*>)(?!<input name=\"__proxy_url\")/" => function($match) use ($self, $url) {
+            print_r($match[4]);
             $input = '<input type="hidden" name="__proxy_url" value="' . proxy_url($url, $match[4]) . '"/>';
             if ($match[2]) {
                 return $match[1] . $match[3] . $self . $match[5] . $match[6] . $input;
