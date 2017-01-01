@@ -43,18 +43,6 @@ $(function() {
         $back.toggleClass('disabled', index == 0);
         $forward.toggleClass('disabled', index == proxy_history.length-1);
     }
-    function parseQuery(qstr) {
-        var query = {};
-        var a = qstr.split('&');
-        for (var i = 0; i < a.length; i++) {
-            var b = a[i].split('=');
-            name = decodeURIComponent(b[0]);
-            if (name != '__proxy_url') {
-                query[name] = decodeURIComponent(b[1] || '');
-            }
-        }
-        return query;
-    }
     toggle_buttons();
     $ul.on('click', 'button', function(e) {
         var name = $(this).attr('class').replace(/\s*disabled\s*/, '');
@@ -96,19 +84,6 @@ $(function() {
             var data = JSON.parse(e.data);
             if (data.__proxy) {
                 var url = data.__proxy.url;
-                /*
-                try {
-                    var iframe_url = iframe[0].iframe.contentWindow.location.href;
-                    var query = $.param(parseQuery(iframe_url.replace(/[^?]+?/, '')));
-                    if (query) {
-                        if (url.match(/\?/)) {
-                            url += '&' + query;
-                        } else {
-                            url += '?' + query;
-                        }
-                    }
-                } catch(e) {}
-                */
                 input.val(url);
                 if (push) {
                     if (data.__proxy.replace) {
