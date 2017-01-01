@@ -21,25 +21,27 @@ __proxy.get_location = (function(createElement) {
     };
 })(document.createElement);
 __proxy.parsed = __proxy.get_location(__proxy.url);
-__proxy.get_url = function(original) {
+
+__proxy.absolute_url = function(original) {
+    if (original.match(/^http/)) {
+        return original;
+    } else if (original.match(/^\/\//)) {
+        return __proxy.parsed.protocol + original;
+    } else if (original.match(/^\//)) {
+        return __proxy.parsed.protocol + '//' + __proxy.parsed.host + original;
+    } else {
+        return __proxy.url.replace(/[^\/]+$/, '') + original;
+    }
+}
+__proxy.get_url = function(url) {
     var base = location.href.replace(/__proxy_url=.*/, '__proxy_url=');
     if (!base.match(/\?/)) {
         base += '?__proxy_url=';
     }
-    var url;
-    if (original.match(/^http/)) {
-        url = original;
-    } else if (original.match(/^\/\//)) {
-        url = __proxy.parsed.protocol + original;
-    } else if (original.match(/^\//)) {
-        url = __proxy.parsed.protocol + '//' + __proxy.parsed.host + original;
-    } else {
-        url = __proxy.url.replace(/[^\/]+$/, '') + original;
-    }
-    if (location.href == original) {
+    if (location.href == url) {
         return original;
     } else {
-        return base + 'base64:' + btoa(url);
+        return base + 'base64:' + btoa(__proxy.absolute_url(url));
     }
 };
 __proxy.fix_form = function(form) {
@@ -55,6 +57,20 @@ __proxy.fix_form = function(form) {
         }
         input.setAttribute('value', 'base64:' + btoa(__proxy.parsed.origin + action.pathname));
         form.setAttribute('action', url);
+    }
+};
+__proxy.post_data = function(url) {
+    if (window.parent) {
+        var title = document.getElementsByTagName('title')[0];
+        var data = {
+            __proxy: {
+                url: url || __proxy.url
+            }
+        };
+        if (title) {
+            data.__proxy.title = title.textContent || title.text;
+        }
+        window.parent.postMessage(JSON.stringify(data), '*');
     }
 };
 if (window.parent) {
@@ -98,6 +114,7 @@ if (window.top) {
     }
     var attr_re = /((?:href|src|data-src|data|data-link)=['"])([^'"]+)(['"])/g;
     var param_re = /__proxy_url=/;
+    var style_re = /(<style[^>]*>)(.*?)(<\/style>)/g;
     function real_node(node) {
         if (node && node.originalNode) {
             return node.originalNode;
@@ -106,11 +123,15 @@ if (window.top) {
         }
     }
     function fix_style_urls(string) {
-        var re = /url\((['"])([^"']+)\1\)/;
+        var re = /url\((['"])([^"']+)\1\)/g;
         var m = string.match(re);
         if (m && !m[2].match(/^(data:|#)/)) {
-            return string.replace(re, function(_, quote, url) {
-                return 'url(' + quote + __proxy.get_url(url) + quote + ')';
+            return string.replace(re, function(all, quote, url) {
+                if (url.match(param_re)) {
+                    return all;
+                } else {
+                    return 'url(' + quote + __proxy.get_url(url) + quote + ')';
+                }
             });
         } else {
             return string;
@@ -133,16 +154,20 @@ if (window.top) {
     }
     function fix_html(html) {
         if (html.match(attr_re)) {
-            return html.replace(attr_re, function(_, prefix, url, postfix) {
+            html = html.replace(attr_re, function(all, prefix, url, postfix) {
                 if (url.match(param_re)) {
-                    return prefix + url + postfix;
+                    return all;
                 } else {
                     return prefix + __proxy.get_url(url) + postfix;
                 }
             });
-        } else {
-            return html;
         }
+        if (html.match(style_re)) {
+            html = html.replace(style_re, function(_, start, style, end) {
+                return start + fix_style_urls(style) + end;
+            });
+        }
+        return html;
     }
     function src_proxy(element) {
         if (!element) {
@@ -206,6 +231,11 @@ if (window.top) {
         }
         return src_proxy(element);
     };
+    function proxifNode(node) {
+        if (node.nodeName.toUpperCase() == 'STYLE') {
+            node.innerHTML = fix_style_urls(node.innerHTML);
+        }
+    }
     ["HTMLElement", "DocumentFragment"].forEach(function(element) {
         element = window[element];
         var originals = {
@@ -215,18 +245,16 @@ if (window.top) {
         };
         
         element.prototype.appendChild = function(node) {
-            var result = src_proxy(originals.appendChild.call(this, real_node(node)));
-            //node.innerHTML += " ";
-            return result;
+            proxifNode(node);
+            return src_proxy(originals.appendChild.call(this, real_node(node)));
         };
         element.prototype.removeChild = function(node) {
             originals.removeChild.call(this, real_node(node));
         };
         element.prototype.insertBefore = function(newChild, refChild) {
-            var result =  originals.insertBefore.call(this, real_node(newChild), real_node(refChild));
-            //newChild.innerHTML += " ";
-            //refChild.innerHTML += " ";
-            return result;
+            proxifNode(newChild);
+            proxifNode(refChild);
+            return  originals.insertBefore.call(this, real_node(newChild), real_node(refChild));
         };
     });
     (function() {
@@ -316,21 +344,20 @@ if (window.top) {
         };
     }
 })(navigator.sendBeacon);
+(function() {
+    if (history && history.pushState) {
+        var pushState = history.pushState;
+        history.pushState = function(state, title, url) {
+            pushState.apply(history, [].slice.call(arguments));
+            __proxy.post_data(__proxy.absolute_url(url));
+        };
+    }
+})();
 window.onload = function() {
     // duck duck go replace the url with https and remove the URI
     [].forEach.call(document.getElementsByTagName('form'), __proxy.fix_form);
 };
+
 document.addEventListener('DOMContentLoaded', function() {
-    if (window.parent) {
-        var title = document.getElementsByTagName('title')[0];
-        var data = {
-            __proxy: {
-                url: __proxy.url
-            }
-        };
-        if (title) {
-            data.__proxy.title = title.textContent || title.text;
-        }
-        window.parent.postMessage(JSON.stringify(data), '*');
-    }
+    __proxy.post_data();
 });

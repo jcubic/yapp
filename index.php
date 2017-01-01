@@ -134,7 +134,6 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
             return $match[1] . $style . $match[4];
         },
         "/(<form(?:\s+(?!action)$any_attr)*\s*)((action=[\"'])([^'\"]+)([\"']))?([^>]*>)(?!<input name=\"__proxy_url\")/" => function($match) use ($self, $url) {
-            print_r($match[4]);
             $input = '<input type="hidden" name="__proxy_url" value="' . proxy_url($url, $match[4]) . '"/>';
             if ($match[2]) {
                 return $match[1] . $match[3] . $self . $match[5] . $match[6] . $input;
@@ -197,7 +196,6 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
     }
 } elseif (isset($_REQUEST["action"])) {
     if ($_REQUEST["action"] == "clear_cookies") {
-        //echo $cookies;
         if (file_exists($cookies)) {
             echo unlink($cookies) ? "true" : "false";
         } else {
@@ -205,8 +203,7 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
         }
     }
 } else {
-    ?>
-<!DOCTYPE HTML>
+?><!DOCTYPE HTML>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
