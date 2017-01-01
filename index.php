@@ -64,12 +64,18 @@ $self = get_self();
 $cookies = "sessions/" . $session_id . "/cookies.txt";
 if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__proxy_url']) || $_REQUEST['__proxy_url'] != "")) {
     $url = urldecode($_REQUEST['__proxy_url']);
+    preg_match("/=([^=]+)$/", $url, $match);
+    $postfix = "";
+    if ($match) {
+        $postfix = $match[1];
+        $url = preg_replace("/=([^=]+)$/", "=", $url);
+    }
     if (preg_match("/base64:(.*)/",$url, $match)) {
         $url = base64_decode($match[1]);
     } else {
         $url = $_REQUEST['__proxy_url'];
     }
-    $url = html_entity_decode($url);
+    $url = html_entity_decode($url) . $postfix;
     $params = get_params();
     if ($params) {
         if (preg_match("/\?/", $url)) {

@@ -20,6 +20,9 @@ __proxy.get_location = (function(createElement) {
         return l;
     };
 })(document.createElement);
+if (!__proxy.url) {
+    throw new Error('__proxy.url not found');
+}
 __proxy.parsed = __proxy.get_location(__proxy.url);
 
 __proxy.absolute_url = function(original) {
@@ -231,8 +234,8 @@ if (window.top) {
         }
         return src_proxy(element);
     };
-    function proxifNode(node) {
-        if (node.nodeName.toUpperCase() == 'STYLE') {
+    function proxifyNode(node) {
+        if (node && node.nodeName.toUpperCase() == 'STYLE') {
             node.innerHTML = fix_style_urls(node.innerHTML);
         }
     }
@@ -245,15 +248,15 @@ if (window.top) {
         };
         
         element.prototype.appendChild = function(node) {
-            proxifNode(node);
+            proxifyNode(node);
             return src_proxy(originals.appendChild.call(this, real_node(node)));
         };
         element.prototype.removeChild = function(node) {
             originals.removeChild.call(this, real_node(node));
         };
         element.prototype.insertBefore = function(newChild, refChild) {
-            proxifNode(newChild);
-            proxifNode(refChild);
+            proxifyNode(newChild);
+            proxifyNode(refChild);
             return  originals.insertBefore.call(this, real_node(newChild), real_node(refChild));
         };
     });
