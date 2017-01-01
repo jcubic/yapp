@@ -1,15 +1,18 @@
-if (window.parent) {
-    (function(window, postMessage) {
-        window.parent.postMessage = function(message, origin) {
-            origin = '*';
-            return postMessage.apply(window.parent, [].slice.call(arguments));
-        };
-    })(window, window.parent.postMessage);
-}
-if (window.top) {
-    self = window.top; // fix for stackoverflow frame check
-}
 __proxy = __proxy || {};
+__proxy.location_proxy = function(location) {
+    return new Proxy(location, {
+        set: function(target, name, value) {
+            if (value.match(/__proxy_url/)) {
+                target[name] = value;
+            } else {
+                target[name] = __proxy.get_url(value);
+            }
+        },
+        get: function(target, name) {
+            return target[name];
+        }
+    });
+};
 __proxy.get_location = (function(createElement) {
     return function(href) {
         var l = createElement.call(document, "a");
@@ -54,6 +57,20 @@ __proxy.fix_form = function(form) {
         form.setAttribute('action', url);
     }
 };
+if (window.parent) {
+    (function(window, postMessage) {
+        window.parent.postMessage = function(message, origin) {
+            origin = '*';
+            return postMessage.apply(window.parent, [].slice.call(arguments));
+        };
+    })(window, window.parent.postMessage);
+    // location is replaced by loc.href by php
+    window.parent.loc = __proxy.location_proxy(window.parent.location);
+}
+var loc = __proxy.location_proxy(window.location);
+if (window.top) {
+    self = window.top; // fix for stackoverflow frame check
+}
 (function(open) {
     XMLHttpRequest.prototype.open = function(method, filepath, sync) {
         open.call(this, method, __proxy.get_url(filepath));
@@ -212,6 +229,22 @@ __proxy.fix_form = function(form) {
             return result;
         };
     });
+    (function() {
+        var original;
+        var name;
+        "matchesSelector:mozMatchesSelector:webkitMatchesSelector:msMatchesSelector".split(":").forEach(function(fn) {
+            if (HTMLElement.prototype[fn]) {
+                name = fn;
+                original = HTMLElement.prototype[fn];
+            }
+        });
+        if (original) {
+            HTMLElement.prototype[name] = function() {
+                var node = real_node(this);
+                return original.apply(node, [].slice.call(arguments));
+            };
+        }
+    })();
     (function(contains) {
         HTMLElement.prototype.contains = function(node) {
             return contains.call(this, real_node(node));
@@ -246,10 +279,9 @@ __proxy.fix_form = function(form) {
         });
     })();
     (function(getComputedStyle) {
+        console.log('getComputedStyle');
         window.getComputedStyle = function(node) {
-            if (node.originalNode) {
-                node = node.originalNode;
-            }
+            node = real_node(node);
             return getComputedStyle.apply(window, [].slice.call(arguments));
         };
     })(window.getComputedStyle);
