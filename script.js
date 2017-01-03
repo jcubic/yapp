@@ -140,6 +140,7 @@ if (window.parent) {
 var loc = __proxy.location_proxy(window.location);
 if (window.top) {
     self = window.top; // fix for stackoverflow frame check
+    global = window;
 }
 (function(open) {
     XMLHttpRequest.prototype.open = function(method, filepath, sync) {
@@ -251,7 +252,7 @@ if (window.top) {
                     return target;
                 } else if (typeof target[name] == 'function') {
                     return target[name].bind(target);
-                } else if (['firstChild', 'parentNode', 'previousSibling'].indexOf(name) != -1) {
+                } else if (['firstChild', 'parentNode', 'previousSibling', 'lastChild'].indexOf(name) != -1) {
                     return src_proxy(target[name]);
                 } else if (['childNodes', 'children'].indexOf(name) != -1) {
                     return [].slice.call(target[name]).map(src_proxy);

@@ -58,11 +58,7 @@ function session_init() {
     }
     return $session_id;
 }
-
-$session_id = session_init();
-$self = get_self();
-$cookies = "sessions/" . $session_id . "/cookies.txt";
-if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__proxy_url']) || $_REQUEST['__proxy_url'] != "")) {
+function get_url() {
     $url = urldecode($_REQUEST['__proxy_url']);
     preg_match("/=([^=]+)$/", $url, $match);
     $postfix = "";
@@ -84,7 +80,84 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
             $url .= '?' . $params;
         }
     }
+    return $url;
+}
+function parse_cookies($cookie_file) {
+    $lines = file($cookie_file);
 
+    $cookies = array();
+
+    foreach ($lines as $line) {
+        $cookie = array();
+
+        // detect httponly cookies and remove #HttpOnly prefix
+        if (substr($line, 0, 10) == '#HttpOnly_') {
+            $line = substr($line, 10);
+            $cookie['httponly'] = true;
+        } else {
+            $cookie['httponly'] = false;
+        }
+
+        // we only care for valid cookie def lines
+        if( strlen( $line ) > 0 && $line[0] != '#' && substr_count($line, "\t") == 6) {
+
+            // get tokens in an array
+            $tokens = explode("\t", $line);
+
+            // trim the tokens
+            $tokens = array_map('trim', $tokens);
+
+            // Extract the data
+            $cookie['domain'] = $tokens[0]; // The domain that created AND can read the variable.
+            $cookie['flag'] = $tokens[1];   // A TRUE/FALSE value indicating if all machines within a given domain can access the variable.
+            $cookie['path'] = $tokens[2];   // The path within the domain that the variable is valid for.
+            $cookie['secure'] = $tokens[3]; // A TRUE/FALSE value indicating if a secure connection with the domain is needed to access the variable.
+
+            $cookie['expiration-epoch'] = $tokens[4];  // The UNIX time that the variable will expire on.
+            $cookie['name'] = urldecode($tokens[5]);   // The name of the variable.
+            $cookie['value'] = urldecode($tokens[6]);  // The value of the variable.
+
+            // Convert date to a readable format
+            $cookie['expiration'] = date('Y-m-d h:i:s', $tokens[4]);
+
+            // Record the cookie.
+            $cookies[] = $cookie;
+        }
+    }
+    return $cookies;
+}
+$session_id = session_init();
+$self = get_self();
+$cookie_file = "sessions/" . $session_id . "/cookies.txt";
+function valid_proxy_url() {
+    return isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__proxy_url']) || $_REQUEST['__proxy_url'] != "");
+}
+function get_cookies($url, $cookie_file) {
+    if (file_exists($cookie_file)) {
+        $url = parse_url($url);
+        $cookies = parse_cookies($cookie_file);
+        $match = array();
+        foreach ($cookies as $cookie) {
+            if ($cookie['domain'] == $url['host'] && ($url['path'] == $cookie['path'] || $cookie['flag'])) {
+               $match[] = $cookie['name'] . '=' . $cookie['value'];
+            }
+        }
+        return implode("; ", $match);
+    } else {
+        return "";
+    }
+}
+if (isset($_REQUEST["action"])) {
+    if ($_REQUEST["action"] == "clear_cookies") {
+        header("Content-Type: application/json");
+        if (file_exists($cookies)) {
+            echo unlink($cookies) ? "true" : "false";
+        } else {
+            echo "false";
+        }
+    }
+} elseif (valid_proxy_url()) {
+    $url = get_url();
     $headers = array();
     if (isset($_SERVER["HTTP_REFERER"]) && preg_match("/base64:(.*)/", $_SERVER["HTTP_REFERER"], $match)) {
         $headers[] = "Referer: " . base64_decode($match[1]);
@@ -105,15 +178,16 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
     curl_setopt($ch, CURLOPT_COOKIESESSION, 1);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
-    curl_setopt($ch, CURLOPT_COOKIEFILE, $cookies);
-    curl_setopt($ch, CURLOPT_COOKIEJAR, $cookies);
+    curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+    curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
     curl_setopt($ch, CURLOPT_URL, $url);
     $page = curl_exec($ch);
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
-    $proxy_object = 'var __proxy = {url: "' . $url . '"};';
+    $cookies = get_cookies($url, $cookie_file);
+    $proxy_object = 'var __proxy = {url: ' . json_encode($url) . '}';
     $style_replace = array(
         "/(@import\s+[\"'])([^'\"]+)([\"'])/" => function($match) use ($self, $url) {
             return $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
@@ -122,7 +196,7 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
             if (preg_match("/^data:/", $match[2])) {
                 return "url(" . $match[1] . $match[2] . $match[3];
             } else {
-                return "url(" . $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
+                return "url('" . $self . proxy_url($url, $match[2]) . "')";
             }
         }
     );
@@ -132,10 +206,11 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
             $style = preg_replace_callback_array($style_replace, $match[2]);
             return $match[1] . $style . $match[3];
         },
-        "/<head>(?!<script>var __proxy)/" => function() use ($proxy_object) {
-            return "<head><script>$proxy_object</script><script src=\"script.js\"></script>";
+        "/<head>(?!<script>var __proxy)/" => function() use ($proxy_object, $cookies) {
+            // we save server side cookies in cookies and replace cookie with cookies because facebook check cookie in javascript
+            return "<head><script>$proxy_object; document.cookies=". json_encode($cookies) . ";</script><script src=\"script.js\"></script>";
         },
-        '/(style=(["\']))(((?!\2).)*)(\2)/' => function($match) use ($style_replace) {
+        '/(style=(["\']))((?:(?!\2).)*)(\2)/' => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[3]);
             return $match[1] . $style . $match[4];
         },
@@ -152,8 +227,11 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
     $attrs = implode("|", array("href", "src", "data", "data-src", "data-link")); // data-src and data-link from duckduckgo
     
     $replace = array(
-        "/([.}; ])location(.href)?\s*=/" => function($match) {
+        "/(?<!var)([.}; ])location(.href)?\s*=/" => function($match) {
             return $match[1] . "loc.href=";
+        },
+        "/\.cookie(?!\w])/" => function($match) {
+            return ".cookies";
         },
         "/(<(?:$tags)(?:\s+$any_attr)*\s*(?:$attrs)=[\"'])([^'\"]+)([\"'][^>]*>)/" => function($match) use ($self, $url) {
             $url_re = "/^(https?:)?\/\//";
@@ -186,26 +264,32 @@ if (isset($_REQUEST['__proxy_url']) && (!preg_match("/base64$/", $_REQUEST['__pr
         
     );
     header("Content-Type: $content_type");
-    if (isset($_GET['__proxy_worker'])) {
-        $page = file_get_contents("worker.js") . $page;
-    }
-    if (preg_match("/html|javascript/", $content_type)) { // javacript can contain html in strings
-        $page = preg_replace_callback_array($replace, $page);
-        if (preg_match("/html/", $content_type)) {
-            $page = preg_replace_callback_array($html_replace, $page);
+    if ($httpcode == 200) {
+        if (isset($_GET['__proxy_worker'])) {
+            $page = file_get_contents("worker.js") . $page;
         }
-        echo $page;
-    } elseif (preg_match("/css/", $content_type)) {
-        echo preg_replace_callback_array($style_replace, $page);
-    } else {
-        echo $page;
-    }
-} elseif (isset($_REQUEST["action"])) {
-    if ($_REQUEST["action"] == "clear_cookies") {
-        if (file_exists($cookies)) {
-            echo unlink($cookies) ? "true" : "false";
+        if (preg_match("/html|javascript/", $content_type)) { // javacript can contain html in strings
+            $page = preg_replace_callback_array($replace, $page);
+            if (preg_match("/html/", $content_type)) {
+                $page = preg_replace_callback_array($html_replace, $page);
+            }
+            echo $page;
+        } elseif (preg_match("/css/", $content_type)) {
+            echo preg_replace_callback_array($style_replace, $page);
         } else {
-            echo "false";
+            echo $page;
+        }
+    } else {
+        $statuses = array(
+            500 => "Internal Server Error",
+            400 => "Bad Request",
+            403 => "Forbidden",
+            404 => "Not Found",
+            204 => "No Content"
+        );
+        if (isset($statuses[$httpcode])) {
+            header("HTTP/1.0 " . $httpcode . " " . $statuses[$httpcode]);
+            echo $page;
         }
     }
 } else {
