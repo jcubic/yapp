@@ -85,7 +85,9 @@ __proxy.absolute_url = function(original) {
     }
 };
 __proxy.get_url = function(url) {
-    if (!url.match(/__proxy_url/) && !url.match(/^(chrome-extension:\/\/|data:|#)/)) {
+    if (url.match(/__proxy_url=/) || url.match(/^(chrome-extension:\/\/|data:|#)/)) {
+        return url;
+    } else {
         var base = location.href.replace(/__proxy_url=.*/, '__proxy_url=');
         if (!base.match(/\?/)) {
             base += '?__proxy_url=';
@@ -95,8 +97,6 @@ __proxy.get_url = function(url) {
         } else {
             return base + 'base64:' + btoa(__proxy.absolute_url(url));
         }
-    } else {
-        return url;
     }
 };
 __proxy.fix_form = function(form) {
@@ -175,7 +175,7 @@ if (window.top) {
     var param_re = /__proxy_url=/;
     var style_re = /(<style[^>]*>)(.*?)(<\/style>)/g;
     function safe_url(url) {
-        return !url.match(param_re) && !url.match(/^(chrome-extension:\/\/|data:|#)/);
+        return url.match(param_re) || url.match(/^(chrome-extension:\/\/|data:|#)/);
     }
     function real_node(node) {
         if (node && node.originalNode) {
@@ -190,9 +190,9 @@ if (window.top) {
         if (m && !m[2].match(/^(data:|#)/)) {
             return string.replace(re, function(all, quote, url) {
                 if (safe_url(url)) {
-                    return 'url(' + quote + __proxy.get_url(url) + quote + ')';
-                } else {
                     return all;
+                } else {
+                    return 'url(' + quote + __proxy.get_url(url) + quote + ')';
                 }
             });
         } else {
@@ -218,9 +218,9 @@ if (window.top) {
         if (html.match(attr_re)) {
             html = html.replace(attr_re, function(all, prefix, url, postfix) {
                 if (safe_url(url)) {
-                    return prefix + __proxy.get_url(url) + postfix;
-                } else {
                     return all;
+                } else {
+                    return prefix + __proxy.get_url(url) + postfix;
                 }
             });
         }
@@ -239,7 +239,7 @@ if (window.top) {
             set: function(target, name, value) {
                 if (name == 'innerHTML') {
                     target[name] = fix_html(value);
-                } else if (attr(name) && safe_url(value)) {
+                } else if (attr(name) && !safe_url(value)) {
                     target[name] = __proxy.get_url(value);
                 } else {
                     target[name] = value;
@@ -249,7 +249,7 @@ if (window.top) {
             get: function(target, name) {
                 if (name == 'setAttribute') {
                     return function(name, value) {
-                        if (attr(name) && safe_url(value)) {
+                        if (attr(name) && !safe_url(value)) {
                             target.setAttribute(name, __proxy.get_url(value));
                         } else {
                             target.setAttribute(name, value);
@@ -377,7 +377,7 @@ if (window.top) {
 })(document.createElement);
 (function(fetch) {
     window.fetch = function(url, options) {
-        return fetch.call(null, safe_url(url) ? __proxy.get_url(url) : url, options || {});
+        return fetch.call(null, __proxy.get_url(url), options || {});
     };
 })(window.fetch);
 (function() {

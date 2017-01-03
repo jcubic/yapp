@@ -233,6 +233,10 @@ if (isset($_REQUEST["action"])) {
         "/\.cookie(?!\w])/" => function($match) {
             return ".cookies";
         },
+        "/document\.(domain\s*=)/" => function($match) {
+            // facebook
+            return "document.__" . $match[1];
+        },
         "/(<(?:$tags)(?:\s+$any_attr)*\s*(?:$attrs)=[\"'])([^'\"]+)([\"'][^>]*>)/" => function($match) use ($self, $url) {
             $url_re = "/^(https?:)?\/\//";
             $uri_re = "/^(?:\/?(?:[A-Za-z0-9\\-._~!$&'()*+,;=:@]|%[0-9A-Fa-f]{2})+)+(\??(&?[^=]+=?[^=]*)*)$/";
