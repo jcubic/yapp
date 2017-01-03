@@ -200,7 +200,7 @@ if (isset($_REQUEST["action"])) {
             }
         }
     );
-    $any_attr = "\w+(?:\s*=\s*[\"'][^\"']*[\"'])?";
+    $any_attr = "[\w-]+(?:\s*=\s*[\"'][^\"']*[\"'])?";
     $html_replace = array(
         "/(<style[^>]*>)(.*?)(<\/style>)/s" => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[2]);
@@ -245,7 +245,8 @@ if (isset($_REQUEST["action"])) {
                 $match[3] = preg_replace($target_re, '$1_self$2', $match[3]);
             }
             if (preg_match("%^$self%", $match[2]) || preg_match("/^(?:data:|#)/", $match[2]) ||
-                !(preg_match($uri_re, $match[2]) || preg_match($url_re, $match[2])) || preg_match($var_plus, $match[2])) {
+                !(preg_match($uri_re, $match[2]) || preg_match($url_re, $match[2])) || preg_match($var_plus, $match[2]) ||
+                preg_match("%^chrom-extension://%", $match[2])) {
                 return $match[1] . $match[2] . $match[3];
             } else {
                 if (preg_match("/redirect=([^&]+)/", $match[2])) {
