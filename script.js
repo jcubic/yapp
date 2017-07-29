@@ -1,4 +1,4 @@
-__proxy = __proxy || {};
+var __proxy = __proxy || {};
 __proxy.location_proxy = function(location) {
     return new Proxy(location, {
         set: function(target, name, value) {
@@ -26,9 +26,9 @@ if (!__proxy.url) {
 __proxy.parsed = __proxy.parse_url(__proxy.url);
 __proxy.is_proxy_url = function(url) {
     return !!url.match(/__proxy_url=(.*)/);
-}
+};
 __proxy.param = function(obj) {
-    var r20 = /%20/g
+    var r20 = /%20/g;
     return Object.keys(obj).map(function(key) {
         return encodeURIComponent(key) + '=' + encodeURIComponent(obj[key] == null ? "" : obj[key]);
     }).join('&').replace(r20, '+');
@@ -37,7 +37,7 @@ __proxy.split_proxy_url = function(url) {
     var arg = url.match(/__proxy_url=(.*)/)[1];
     var match = decodeURIComponent(arg).match(/base64:([^&]+)&?(.*)/);
     if (match) {
-        var url = atob(match[1]);
+        url = atob(match[1]);
         var query = Object.assign({}, __proxy. parse_query(url.replace(/[^?]+\??/, '')), __proxy. parse_query(match[2]));
         return {
             url: url.replace(/\?.*$/, ''),
@@ -51,23 +51,23 @@ __proxy. parse_query = function(string) {
         var array = string.split('&');
         for (var i = 0; i < array.length; i++) {
             var parts = array[i].split('=');
-            name = decodeURIComponent(parts[0]);
+            var name = decodeURIComponent(parts[0]);
             if (name != '__proxy_url') {
                 query[name] = decodeURIComponent(parts[1] || '').replace(/\+/g, ' ');
             }
         }
     }
     return query;
-}
+};
 __proxy.absolute_url = function(original) {
     if (__proxy.is_proxy_url(original)) {
         var split = __proxy.split_proxy_url(original);
         if (split) {
             if (split.query) {
                 if (split.url.match(/\?/)) {
-                    return split.url + '&' + split.query
+                    return split.url + '&' + split.query;
                 } else {
-                    return split.url + '?' + split.query
+                    return split.url + '?' + split.query;
                 }
             } else {
                 return split.url;
@@ -85,15 +85,15 @@ __proxy.absolute_url = function(original) {
     }
 };
 __proxy.get_url = function(url) {
-    if (url.match(/__proxy_url=/) || url.match(/^(chrome-extension:\/\/|data:|#)/)) {
+    if (url.match(/__proxy_url=/) || url.match(/^(chrome-extension:\/\/|data:|#|javascript:|blob:)/)) {
         return url;
     } else {
         var base = location.href.replace(/__proxy_url=.*/, '__proxy_url=');
         if (!base.match(/\?/)) {
             base += '?__proxy_url=';
         }
-        if (location.href == url) {
-            return original;
+        if (location.href === url) {
+            return __proxy.url;
         } else {
             return base + 'base64:' + btoa(__proxy.absolute_url(url));
         }
@@ -148,7 +148,7 @@ if (window.top) {
 }
 (function(open) {
     XMLHttpRequest.prototype.open = function(method, filepath, sync) {
-        open.call(this, method, __proxy.get_url(filepath));
+        open.call(this, method, __proxy.get_url(filepath), sync);
     };
 })(XMLHttpRequest.prototype.open);
 (function(img) {
@@ -303,9 +303,9 @@ if (window.top) {
         var originals = {
             appendChild: element.prototype.appendChild,
             removeChild: element.prototype.removeChild,
-            insertBefore: element.prototype.insertBefore
+            insertBefore: element.prototype.insertBefore,
+            replaceChild: element.prototype.replaceChild
         };
-        
         element.prototype.appendChild = function(node) {
             proxifyNode(node);
             return src_proxy(originals.appendChild.call(this, real_node(node)));
@@ -317,6 +317,11 @@ if (window.top) {
             proxifyNode(newChild);
             proxifyNode(refChild);
             return  originals.insertBefore.call(this, real_node(newChild), real_node(refChild));
+        };
+        element.prototype.replaceChild = function(newNode, oldNode) {
+            proxifyNode(newNode);
+            proxifyNode(oldNode);
+            return originals.replaceChild.call(this, real_node(newNode), real_node(oldNode));
         };
     });
     (function() {
@@ -368,6 +373,21 @@ if (window.top) {
             }
         });
     })();
+    if (typeof window.MutationObserver !== 'undefined') {
+        (function(observe) {
+            MutationObserver.prototype.observe = function(node, options) {
+                return observe.call(this, real_node(node), options);
+            };
+        })(MutationObserver.prototype.observe);
+    }
+    if (typeof window.CanvasRenderingContext2D !== 'undefined') {
+        (function(drawImage) {
+            window.CanvasRenderingContext2D.prototype.drawImage = function(image) {
+                image = real_node(image);
+                return drawImage.apply(this, [].slice.call(arguments));
+            };
+        })(window.CanvasRenderingContext2D.prototype.drawImage);
+    }
     (function(getComputedStyle) {
         window.getComputedStyle = function(node) {
             node = real_node(node);
@@ -428,7 +448,6 @@ window.onload = function() {
     // duck duck go replace the url with https and remove the URI
     [].forEach.call(document.getElementsByTagName('form'), __proxy.fix_form);
 };
-
 document.addEventListener('DOMContentLoaded', function() {
     __proxy.post_data();
 });

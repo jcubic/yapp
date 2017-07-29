@@ -18,9 +18,11 @@ function encodeURI($uri) {
 }
 function proxy_url($page_url, $url) {
     $parsed = parse_url($page_url);
-    if (!preg_match("%^(http|//)%", $url)) {
+    if (preg_match("/^(javascript:|data:)/", $url)) {
+        return $url;
+    } elseif (!preg_match("%^(http|//)%", $url)) {
         $base = $parsed['scheme'] . "://" . $parsed['host'] .
-            (isset($parsed['port']) ? ":" . $parsed['port'] : "");
+                (isset($parsed['port']) ? ":" . $parsed['port'] : "");
         $dir = (isset($parsed['path']) ? preg_replace("%[^/]+$%", "", $parsed['path']) : "/");
         if (preg_match("%^/%", $url)) {
             $url = $base . "/" . $url;
@@ -42,6 +44,11 @@ function get_params() {
     }
     return http_build_query($data);
 }
+function is_bot() {
+    return preg_match("/spider|bot/i", $_SERVER['HTTP_USER_AGENT']);
+}
+
+
 function session_init() {
     $cookie_name = "PROXY_SESSION_ID";
     if (isset($_COOKIE[$cookie_name])) {
@@ -53,7 +60,7 @@ function session_init() {
     if (!is_dir("sessions")) {
         mkdir("sessions");
     }
-    if (!is_dir("sessions/" . $session_id)) {
+    if (!is_dir("sessions/" . $session_id) && !is_bot()) {
         mkdir("sessions/" . $session_id);
     }
     return $session_id;
@@ -139,7 +146,7 @@ function get_cookies($url, $cookie_file) {
         $match = array();
         foreach ($cookies as $cookie) {
             if ($cookie['domain'] == $url['host'] && ($url['path'] == $cookie['path'] || $cookie['flag'])) {
-               $match[] = $cookie['name'] . '=' . $cookie['value'];
+                $match[] = $cookie['name'] . '=' . $cookie['value'];
             }
         }
         return implode("; ", $match);
@@ -178,8 +185,10 @@ if (isset($_REQUEST["action"])) {
     curl_setopt($ch, CURLOPT_COOKIESESSION, 1);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
-    curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
-    curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
+    if (!is_bot()) {
+        curl_setopt($ch, CURLOPT_COOKIEFILE, $cookie_file);
+        curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
+    }
     curl_setopt($ch, CURLOPT_URL, $url);
     $page = curl_exec($ch);
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
@@ -299,55 +308,55 @@ if (isset($_REQUEST["action"])) {
     }
 } else {
 ?><!DOCTYPE HTML>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <title>Yapp Proxy demo using jQuery UI dialog and iframe</title>
-    <meta name="Description" content=""/>
-    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
-    <link rel="icon" type="image/png" href="favicon/favicon-32x32.png" sizes="32x32">
-    <link rel="icon" type="image/png" href="favicon/favicon-16x16.png" sizes="16x16">
-    <link rel="manifest" href="favicon/manifest.json">
-    <link rel="mask-icon" href="favicon/safari-pinned-tab.svg" color="#5bbad5">
-    <link rel="shortcut icon" href="favicon/favicon.ico">
-    <meta name="msapplication-config" content="favicon/browserconfig.xml">
-    <meta name="theme-color" content="#ffffff">
-    <!--[if IE]>
-    <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-    <link href="css/style.css" rel="stylesheet"/>
-    <script src="https://cdn.rawgit.com/github/fetch/master/fetch.js"></script>
-</head>
-<body>
-    <form action="" method="GET" class="search">
+  <html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+      <meta charset="utf-8" />
+      <title>Yapp Proxy demo using jQuery UI dialog and iframe</title>
+      <meta name="Description" content=""/>
+      <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+      <link rel="icon" type="image/png" href="favicon/favicon-32x32.png" sizes="32x32">
+      <link rel="icon" type="image/png" href="favicon/favicon-16x16.png" sizes="16x16">
+      <link rel="manifest" href="favicon/manifest.json">
+      <link rel="mask-icon" href="favicon/safari-pinned-tab.svg" color="#5bbad5">
+      <link rel="shortcut icon" href="favicon/favicon.ico">
+      <meta name="msapplication-config" content="favicon/browserconfig.xml">
+      <meta name="theme-color" content="#ffffff">
+      <!--[if IE]>
+        <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+      <![endif]-->
+      <link href="css/style.css" rel="stylesheet"/>
+      <script src="https://cdn.rawgit.com/github/fetch/master/fetch.js"></script>
+    </head>
+    <body>
+      <form action="" method="GET" class="search">
         <input id="query" placeholder="https://duckduckgo.com/"/>
         <input id="__proxy_url" type="hidden" name="__proxy_url" value="base64%3AaHR0cHM6Ly9kdWNrZHVja2dvLmNvbS8%3D"/>
         <input id="submit" type="submit" value="go"/>
         <button class="button">clear cookies</button>
-    </form>
-    <script>
-        var query = document.getElementById('query');
-        var __proxy_url = document.getElementById('__proxy_url');
-        query.addEventListener('keyup', function() {
-            var url = query.value;
-            if (!url.match(/^http/)) {
-                if (url.match(/^\/\//)) {
-                    url = 'http:' + url;
-                } else {
-                    url = 'http://' + url;
-                }
-            }
-            __proxy_url.value = 'base64:' + btoa(url);
-        });
-        document.querySelector('.button').addEventListener('click', function(e) {
-            fetch('./?action=clear_cookies', {credentials: "same-origin"}).then(function(response) {
-                return response.json();
-            }).then(function(data) {
-                alert('cookies ' + (!data ? 'not ' : '') + 'cleared');
-            });
-            e.preventDefault();
-        });
-    </script>
-</body>
-</html>
+      </form>
+      <script>
+       var query = document.getElementById('query');
+       var __proxy_url = document.getElementById('__proxy_url');
+       query.addEventListener('keyup', function() {
+           var url = query.value;
+           if (!url.match(/^http/)) {
+               if (url.match(/^\/\//)) {
+                   url = 'http:' + url;
+               } else {
+                   url = 'http://' + url;
+               }
+           }
+           __proxy_url.value = 'base64:' + btoa(url);
+       });
+       document.querySelector('.button').addEventListener('click', function(e) {
+           fetch('./?action=clear_cookies', {credentials: "same-origin"}).then(function(response) {
+               return response.json();
+           }).then(function(data) {
+               alert('cookies ' + (!data ? 'not ' : '') + 'cleared');
+           });
+           e.preventDefault();
+       });
+      </script>
+    </body>
+  </html>
 <?php } ?>
