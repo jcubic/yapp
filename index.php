@@ -3,6 +3,15 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
+define('__DEBUG__', false);
+
+$log = fopen("debug.log", "a");
+function log_message($str) {
+    global $log;
+    if (__DEBUG__) {
+        fwrite($log, $str . "\n");
+    }
+}
 
 function get_self() {
     $uri = preg_replace("/__proxy_url=.*/", "__proxy_url=", $_SERVER['REQUEST_URI']);
@@ -154,6 +163,7 @@ function get_cookies($url, $cookie_file) {
         return "";
     }
 }
+
 if (isset($_REQUEST["action"])) {
     if ($_REQUEST["action"] == "clear_cookies") {
         header("Content-Type: application/json");
@@ -178,7 +188,7 @@ if (isset($_REQUEST["action"])) {
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, FALSE);
     curl_setopt($ch, CURLOPT_USERAGENT, $_SERVER["HTTP_USER_AGENT"]);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_HEADER, 0);
+    curl_setopt($ch, CURLOPT_HEADER, 1);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
     curl_setopt($ch, CURLOPT_FOLLOWLOCATION, 1);
     curl_setopt($ch, CURLOPT_ENCODING, "");
@@ -190,7 +200,11 @@ if (isset($_REQUEST["action"])) {
         curl_setopt($ch, CURLOPT_COOKIEJAR, $cookie_file);
     }
     curl_setopt($ch, CURLOPT_URL, $url);
-    $page = curl_exec($ch);
+    $response = curl_exec($ch);
+    preg_match("%^((?:HTTP/.+?(?:\n\n|\r\n\r\n))+)(.+)$%s", $response, $match);
+    $response_headers = trim($match[1]);
+    $page = $match[2];
+    log_message(date("r") . " " . $url . "\n" . $response_headers . "\n");
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -234,10 +248,13 @@ if (isset($_REQUEST["action"])) {
     );
     $tags = implode("|", array("a", "script", "link", "iframe", "img", "object"));
     $attrs = implode("|", array("href", "src", "data", "data-src", "data-link")); // data-src and data-link from duckduckgo
-    
+
     $replace = array(
         "/(?<!var)([.}; ])location(.href)?\s*=/" => function($match) {
             return $match[1] . "loc.href=";
+        },
+        "/(?<!var)([.}; ])(location.replace\(['\"])([^\)]+)(['\"]\))/" => function($match) use ($url, $self) {
+            return $match[1] . $match[2] . $self . proxy_url($url, $match[3]) . $match[4];
         },
         "/\.cookie(?!\w])/" => function($match) {
             return ".cookies";
@@ -275,7 +292,7 @@ if (isset($_REQUEST["action"])) {
                 return $self . proxy_url($url, $match[1]) . (isset($match[2]) ? $match[2] : "");
             }, $match[2]) . $match[3];
         }
-        
+
     );
     header("Content-Type: $content_type");
     if ($httpcode == 200) {
@@ -359,4 +376,8 @@ if (isset($_REQUEST["action"])) {
       </script>
     </body>
   </html>
-<?php } ?>
+<?php }
+
+fclose($log);
+
+?>

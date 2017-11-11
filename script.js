@@ -9,6 +9,15 @@ __proxy.location_proxy = function(location) {
             }
         },
         get: function(target, name) {
+            if (typeof target[name] === 'function' && name === 'replace') {
+                var fn = function(url) {
+                    console.log(url);
+                    target['href'] = __proxy.get_url(url);
+                };
+                fn.toString = function() {
+                    return 'function () { [native code] }';
+                };
+            }
             return target[name];
         }
     });
