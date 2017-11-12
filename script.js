@@ -70,6 +70,7 @@ __proxy. parse_query = function(string) {
 };
 __proxy.absolute_url = function(original) {
     if (__proxy.is_proxy_url(original)) {
+        console.log('1');
         var split = __proxy.split_proxy_url(original);
         if (split) {
             if (split.query) {
@@ -84,7 +85,12 @@ __proxy.absolute_url = function(original) {
         }
     }
     if (original.match(/^http/)) {
-        return original;
+        var re = new RegExp('^' + location.protocol + '//' + location.host + '/');
+        if (original.match(re)) {
+            return __proxy.url.replace(/[^\/]+$/, '') + original.replace(re, '');
+        } else {
+            return original;
+        }
     } else if (original.match(/^\/\//)) {
         return __proxy.parsed.protocol + original;
     } else if (original.match(/^\//)) {
@@ -155,6 +161,19 @@ if (window.top) {
     self = window.top; // fix for stackoverflow frame check
     global = window;
 }
+document.addEventListener('mousedown', function(e) {
+    var node;
+    if (window.event && window.event.srcElement) {
+        node = window.event.srcElement;
+    } else {
+        node = e.target;
+    }
+    if (node.nodeName.toLowerCase() == 'a') {
+        if (!__proxy.is_proxy_url(node.href)) {
+            location.href = __proxy.get_url(node.href);
+        }
+    }
+});
 (function(open) {
     XMLHttpRequest.prototype.open = function(method, filepath, sync) {
         open.call(this, method, __proxy.get_url(filepath), sync);
@@ -182,7 +201,7 @@ if (window.top) {
     }
     var attr_re = /((?:href|src|data-src|data|data-link)=['"])([^'"]+)(['"])/g;
     var param_re = /__proxy_url=/;
-    var style_re = /(<style[^>]*>)(.*?)(<\/style>)/g;
+    var style_re = /(<style[^>]*>)([\s\S]*?)(<\/style>)/g;
     function safe_url(url) {
         return url.match(param_re) || url.match(/^(chrome-extension:\/\/|data:|#)/);
     }
@@ -194,9 +213,12 @@ if (window.top) {
         }
     }
     function fix_style_urls(string) {
-        var re = /url\((['"])([^"']+)\1\)/g;
+        if (!string) {
+            return;
+        }
+        var re = /url\((['"])(.*?)\1\)/g;
         var m = string.match(re);
-        if (m && !m[2].match(/^(data:|#)/)) {
+        if (m) {
             return string.replace(re, function(all, quote, url) {
                 if (safe_url(url)) {
                     return all;
