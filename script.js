@@ -297,6 +297,9 @@ document.addEventListener('mousedown', function(e) {
                 } else if (name == 'style') {
                     return new Proxy(target[name], {
                         get: function(target, name) {
+                            if (typeof target[name] === 'function') {
+                                return target[name].bind(target);
+                            }
                             return target[name];
                         },
                         set: function(target, name, value) {
@@ -370,6 +373,19 @@ document.addEventListener('mousedown', function(e) {
                 return original.apply(node, [].slice.call(arguments));
             };
         }
+    })();
+    (function() {
+        ['IntersectionObserver', 'MutationObserver', 'WebKitMutationObserver'].forEach(function(name) {
+            var Observer = window[name];
+            if (Observer) {
+                var original = Observer.prototype.observe;
+                Observer.prototype.observe = function(wrapper) {
+                    var args = [].slice.call(arguments, 1);
+                    args.unshift(real_node(wrapper));
+                    return original.apply(this, args);
+                };
+            }
+        });
     })();
     (function(contains) {
         HTMLElement.prototype.contains = function(node) {
