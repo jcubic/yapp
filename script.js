@@ -11,7 +11,6 @@ __proxy.location_proxy = function(location) {
         get: function(target, name) {
             if (typeof target[name] === 'function' && name === 'replace') {
                 var fn = function(url) {
-                    console.log(url);
                     target['href'] = __proxy.get_url(url);
                 };
                 fn.toString = function() {
@@ -70,7 +69,6 @@ __proxy. parse_query = function(string) {
 };
 __proxy.absolute_url = function(original) {
     if (__proxy.is_proxy_url(original)) {
-        console.log('1');
         var split = __proxy.split_proxy_url(original);
         if (split) {
             if (split.query) {
@@ -288,6 +286,15 @@ document.addEventListener('mousedown', function(e) {
                     };
                 } else if (name == 'originalNode') {
                     return target;
+                } else if (['getElementsByTagName', 'getElementsByClassName', 'querySelectorAll'].indexOf(name) != -1) {
+                    return function() {
+                        var nodes = target[name].call(target, [].slice.call(arguments));
+                        return [].map.call(nodes, src_proxy);
+                    };
+                } else if (['querySelector', 'getElementById'].indexOf(name) != -1) {
+                    return function() {
+                        return src_proxy(target[name].call(target, [].slice.call(arguments)));
+                    };
                 } else if (typeof target[name] == 'function') {
                     return target[name].bind(target);
                 } else if (['firstChild', 'parentNode', 'previousSibling', 'lastChild'].indexOf(name) != -1) {
@@ -404,6 +411,9 @@ document.addEventListener('mousedown', function(e) {
                         return obj;
                     }
                 };
+                document[fun].toString = function() {
+                    return original.toString();
+                };
             }
         });
         ['querySelectorAll', 'getElementsByTagName', 'getElementsByClassName', 'getElementsByName'].forEach(function(fun) {
@@ -416,6 +426,9 @@ document.addEventListener('mousedown', function(e) {
                         result[i] = list[i] ? src_proxy(list[i]) : list[i];
                     }
                     return result;
+                };
+                document[fun].toString = function() {
+                    return original.toString();
                 };
             }
         });
