@@ -263,6 +263,8 @@ document.addEventListener('mousedown', function(e) {
     function src_proxy(element) {
         if (!element) {
             return element;
+        } else if (element.originalNode) {
+            return element;
         }
         return new Proxy(element, {
             set: function(target, name, value) {
@@ -276,7 +278,15 @@ document.addEventListener('mousedown', function(e) {
                 return true;
             },
             get: function(target, name) {
-                if (name == 'setAttribute') {
+                if (name == 'originalNode') {
+                    return target;
+                } else if (!target[name]) {
+                  return target[name];
+                } else if (name == 'compareDocumentPosition') {
+                    return function(wrapper) {
+                        return target.compareDocumentPosition(real_node(wrapper));
+                    };
+                } else if (name == 'setAttribute') {
                     return function(name, value) {
                         if (attr(name) && !safe_url(value)) {
                             target.setAttribute(name, __proxy.get_url(value));
@@ -284,8 +294,6 @@ document.addEventListener('mousedown', function(e) {
                             target.setAttribute(name, value);
                         }
                     };
-                } else if (name == 'originalNode') {
-                    return target;
                 } else if (['getElementsByTagName', 'getElementsByClassName', 'querySelectorAll'].indexOf(name) != -1) {
                     return function() {
                         var nodes = target[name].call(target, [].slice.call(arguments));
