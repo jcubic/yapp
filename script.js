@@ -23,7 +23,6 @@ __proxy.location_proxy = function(location) {
         get: function(target, name) {
             if (typeof target[name] === 'function' && name === 'replace') {
                 var fn = function(url) {
-                    console.log(url);
                     target['href'] = __proxy.get_url(url);
                 };
                 fn.toString = function() {
@@ -82,7 +81,6 @@ __proxy. parse_query = function(string) {
 };
 __proxy.absolute_url = function(original) {
     if (__proxy.is_proxy_url(original)) {
-        console.log('1');
         var split = __proxy.split_proxy_url(original);
         if (split) {
             if (split.query) {
@@ -277,6 +275,8 @@ document.addEventListener('mousedown', function(e) {
     function src_proxy(element) {
         if (!element) {
             return element;
+        } else if (element.originalNode) {
+            return element;
         }
         return new Proxy(element, {
             set: function(target, name, value) {
@@ -290,7 +290,15 @@ document.addEventListener('mousedown', function(e) {
                 return true;
             },
             get: function(target, name) {
-                if (name == 'setAttribute') {
+                if (name == 'originalNode') {
+                    return target;
+                } else if (!target[name]) {
+                  return target[name];
+                } else if (name == 'compareDocumentPosition') {
+                    return function(wrapper) {
+                        return target.compareDocumentPosition(real_node(wrapper));
+                    };
+                } else if (name == 'setAttribute') {
                     return function(name, value) {
                         if (attr(name) && !safe_url(value)) {
                             target.setAttribute(name, __proxy.get_url(value));
@@ -298,8 +306,15 @@ document.addEventListener('mousedown', function(e) {
                             target.setAttribute(name, value);
                         }
                     };
-                } else if (name == 'originalNode') {
-                    return target;
+                } else if (['getElementsByTagName', 'getElementsByClassName', 'querySelectorAll'].indexOf(name) != -1) {
+                    return function() {
+                        var nodes = target[name].call(target, [].slice.call(arguments));
+                        return [].map.call(nodes, src_proxy);
+                    };
+                } else if (['querySelector', 'getElementById'].indexOf(name) != -1) {
+                    return function() {
+                        return src_proxy(target[name].call(target, [].slice.call(arguments)));
+                    };
                 } else if (typeof target[name] == 'function') {
                     return target[name].bind(target);
                 } else if (['firstChild', 'parentNode', 'previousSibling', 'lastChild'].indexOf(name) != -1) {
@@ -309,6 +324,9 @@ document.addEventListener('mousedown', function(e) {
                 } else if (name == 'style') {
                     return new Proxy(target[name], {
                         get: function(target, name) {
+                            if (typeof target[name] === 'function') {
+                                return target[name].bind(target);
+                            }
                             return target[name];
                         },
                         set: function(target, name, value) {
@@ -383,6 +401,19 @@ document.addEventListener('mousedown', function(e) {
             };
         }
     })();
+    (function() {
+        ['IntersectionObserver', 'MutationObserver', 'WebKitMutationObserver'].forEach(function(name) {
+            var Observer = window[name];
+            if (Observer) {
+                var original = Observer.prototype.observe;
+                Observer.prototype.observe = function(wrapper) {
+                    var args = [].slice.call(arguments, 1);
+                    args.unshift(real_node(wrapper));
+                    return original.apply(this, args);
+                };
+            }
+        });
+    })();
     (function(contains) {
         HTMLElement.prototype.contains = function(node) {
             return contains.call(this, real_node(node));
@@ -400,6 +431,9 @@ document.addEventListener('mousedown', function(e) {
                         return obj;
                     }
                 };
+                document[fun].toString = function() {
+                    return original.toString();
+                };
             }
         });
         ['querySelectorAll', 'getElementsByTagName', 'getElementsByClassName', 'getElementsByName'].forEach(function(fun) {
@@ -412,6 +446,9 @@ document.addEventListener('mousedown', function(e) {
                         result[i] = list[i] ? src_proxy(list[i]) : list[i];
                     }
                     return result;
+                };
+                document[fun].toString = function() {
+                    return original.toString();
                 };
             }
         });
