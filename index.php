@@ -215,11 +215,11 @@ if (isset($_REQUEST["action"])) {
     curl_setopt($ch, CURLOPT_URL, $url);
     $response = curl_exec($ch);
     if (preg_match("%^((?:HTTP/.+?(?:\n\n|\r\n\r\n))+)(.+)$%s", $response, $match)) {
-      $response_headers = trim($match[1]);
-      $page = $match[2];
+        $response_headers = trim($match[1]);
+        $page = $match[2];
     } else {
-      $page = $response;
-      $response_headers = $response;
+        $page = "";
+        $response_headers = $response;
     }
     log_message(date("r") . " " . $url . "\n" . $response_headers . "\n");
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
