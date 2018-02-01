@@ -1,3 +1,15 @@
+/* __   __
+ * \ \ / /_ _ _ __  _ __
+ *  \ V / _` | '_ \| '_ \
+ *   | | (_| | |_) | |_) |
+ *   |_|\__,_| .__/| .__/
+ *           |_|   |_|
+ *   Yet Another Php Proxy
+ *
+ * Copyright (c) 2016-2018 Jakub Jankiewicz <https://jcubic.pl/me>
+ *
+ * Released under MIT license <https://opensource.org/licenses/MIT>
+ */
 var __proxy = __proxy || {};
 __proxy.location_proxy = function(location) {
     return new Proxy(location, {

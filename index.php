@@ -1,4 +1,17 @@
 <?php
+/* __   __
+ * \ \ / /_ _ _ __  _ __
+ *  \ V / _` | '_ \| '_ \
+ *   | | (_| | |_) | |_) |
+ *   |_|\__,_| .__/| .__/
+ *           |_|   |_|
+ *   Yet Another Php Proxy
+ *
+ * Copyright (c) 2016-2018 Jakub Jankiewicz <https://jcubic.pl/me>
+ *
+ * Released under MIT license <https://opensource.org/licenses/MIT>
+ */
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
