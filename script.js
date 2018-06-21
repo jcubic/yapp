@@ -293,13 +293,17 @@ document.addEventListener('mousedown', function(e) {
         }
         return html;
     }
+    var proxies = new WeakMap();
     function src_proxy(element) {
         if (!element) {
             return element;
         } else if (element.originalNode) {
             return element;
         }
-        return new Proxy(element, {
+        if (proxies.has(element)) {
+            return proxies.get(element);
+        }
+        var proxy = new Proxy(element, {
             set: function(target, name, value) {
                 if (name == 'innerHTML') {
                     target[name] = fix_html(value);
@@ -313,8 +317,10 @@ document.addEventListener('mousedown', function(e) {
             get: function(target, name) {
                 if (name == 'originalNode') {
                     return target;
+                } else if (name === 'parentNode' && target.nodeName === 'HTML') {
+                    return window.document;
                 } else if (!target[name]) {
-                  return target[name];
+                    return target[name];
                 } else if (name == 'compareDocumentPosition') {
                     return function(wrapper) {
                         return target.compareDocumentPosition(real_node(wrapper));
@@ -367,6 +373,8 @@ document.addEventListener('mousedown', function(e) {
                 }
             }
         });
+        proxies.set(element, proxy);
+        return proxy;
     }
     (function(createElement) {
         document.createElement = function(tag) {

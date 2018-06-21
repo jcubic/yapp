@@ -19,6 +19,10 @@ error_reporting(E_ALL);
 define('__DEBUG__', false);
 
 $log = fopen("debug.log", "a");
+if (__DEBUG__) {
+} else {
+    $log = null;
+}
 function log_message($str) {
     global $log;
     if (__DEBUG__) {
@@ -221,6 +225,17 @@ if (isset($_REQUEST["action"])) {
         $page = "";
         $response_headers = $response;
     }
+    function full_proxy_url($original) {
+        if (preg_match("%\\\/%", $original)) {
+            return $original;
+        }
+        global $url, $self;
+        $base = $self;
+        if (preg_match("%\/%", $original)) {
+            $base = preg_replace("%/%", "\\/", $base);
+        }
+        return $base . proxy_url($url, $original);
+    }
     log_message(date("r") . " " . $url . "\n" . $response_headers . "\n");
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
@@ -281,7 +296,7 @@ if (isset($_REQUEST["action"])) {
         },
         "/(?<!var)([.}; ]location.replace\((['\"]))([^\)]+)(['\"])\)/" => function($match) use ($url, $self) {
             $replace_url = json_decode($match[2] . $match[3] . $match[4]);
-            return $match[1] . $self . proxy_url($url, $replace_url) . $match[4] . ")";
+            return $match[1] . full_proxy_url($replace_url) . $match[4] . ")";
         },
         "/\.cookie(?!\w])/" => function($match) {
             return ".cookies";
@@ -291,6 +306,9 @@ if (isset($_REQUEST["action"])) {
             return "document.__" . $match[1];
         },
         "/(<(?:$tags)(?:\s+$any_attr)*\s*(?:$attrs)=[\"'])([^'\"]+)([\"'][^>]*>)/" => function($match) use ($self, $url) {
+            if (preg_match("%\\\/%", $match[2]) || !preg_match("%/%", $match[2])) {
+                return $match[0];
+            }
             $url_re = "/^(https?:)?\/\//";
             $uri_re = "/^(?:\/?(?:[A-Za-z0-9\\-._~!$&'()*+,;=:@]|%[0-9A-Fa-f]{2})+)+(\??(&?[^=]+=?[^=]*)*)$/";
             $var_plus =  "/^([\$A-Z_][0-9A-Z_\$]*|\s+|\+)+$/i"; // some site have string concatenetion src="+e+"
@@ -409,6 +427,8 @@ if (isset($_REQUEST["action"])) {
   </html>
 <?php }
 
-fclose($log);
+if (__DEBUG__) {
+    fclose($log);
+}
 
 ?>
