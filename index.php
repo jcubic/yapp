@@ -224,10 +224,13 @@ if (isset($_REQUEST["action"])) {
     log_message(date("r") . " " . $url . "\n" . $response_headers . "\n");
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+    if (preg_match("/javascript/", $content_type)) {
+        $page = "// source: " . $url . "\n" . $page;
+    }
     $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     $cookies = get_cookies($url, $cookie_file);
-    $proxy_object = 'var __proxy = {url: ' . json_encode($url) . '}';
+    $proxy_init = "var __proxy=__proxy||{};if(!__proxy.url){__proxy.url=" . json_encode($url) . ";__proxy.self=" . json_encode($self) . "}";
     $style_replace = array(
         "/(@import\s+[\"'])([^'\"]+)([\"'])/" => function($match) use ($self, $url) {
             return $match[1] . $self . proxy_url($url, $match[2]) . $match[3];
@@ -246,9 +249,9 @@ if (isset($_REQUEST["action"])) {
             $style = preg_replace_callback_array($style_replace, $match[2]);
             return $match[1] . $style . $match[3];
         },
-        "/<head>(?!<script>var __proxy)/" => function() use ($proxy_object, $cookies) {
+        "/<head>(?!<script>var __proxy)/" => function() use ($proxy_init, $cookies) {
             // we save server side cookies in cookies and replace cookie with cookies because facebook check cookie in javascript
-            return "<head><script>$proxy_object; document.cookies=". json_encode($cookies) . ";</script><script src=\"script.js\"></script>";
+            return "<head><script>$proxy_init document.cookies=". json_encode($cookies) . ";</script><script src=\"script.js\"></script>";
         },
         '/(style=(["\']))((?:(?!\2).)*)(\2)/' => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[3]);
@@ -266,8 +269,14 @@ if (isset($_REQUEST["action"])) {
     $tags = implode("|", array("a", "script", "link", "iframe", "img", "object"));
     $attrs = implode("|", array("href", "src", "data", "data-src", "data-link")); // data-src and data-link from duckduckgo
 
+    $js_replace = array(
+        "%(//\s*(#\s*sourceMappingURL\s*=\s*|source:\s*))(.*)\s*%" => function($match) use ($url, $self) {
+            return $match[1] . $self . proxy_url($url, $match[3]) . "\n";
+        }
+    );
+
     $replace = array(
-        "/(?<!var)([.}; ])location(.href)?\s*=/" => function($match) {
+        "/(?<!var)([.}; ])(window.)?location(.href)?\s*=/" => function($match) {
             return $match[1] . "loc.href=";
         },
         "/(?<!var)([.}; ]location.replace\((['\"]))([^\)]+)(['\"])\)/" => function($match) use ($url, $self) {
@@ -322,6 +331,9 @@ if (isset($_REQUEST["action"])) {
             $page = preg_replace_callback_array($replace, $page);
             if (preg_match("/html/", $content_type)) {
                 $page = preg_replace_callback_array($html_replace, $page);
+            }
+            if (preg_match("/javascript/", $content_type)) {
+                $page = preg_replace_callback_array($js_replace, $page);
             }
             echo $page;
         } elseif (preg_match("/css/", $content_type)) {
