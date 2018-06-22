@@ -236,7 +236,7 @@ if (isset($_REQUEST["action"])) {
         }
         return $base . proxy_url($url, $original);
     }
-    log_message(date("r") . " " . $url . "\n" . $response_headers . "\n");
+    //log_message(date("r") . " " . $url . "\n" . $response_headers . "\n");
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     if (preg_match("/javascript/", $content_type)) {
@@ -291,8 +291,11 @@ if (isset($_REQUEST["action"])) {
     );
 
     $replace = array(
-        "/(?<!var)([.}; ])(window.)?location(.href)?\s*=/" => function($match) {
-            return $match[1] . "loc.href=";
+        "/(?<!var)([.}; ])(window.)?location((.href)?\s*=)/" => function($match) {
+            return $match[1] . "loc" . $match[2];
+        },
+        "/=\s*window.location([;, ])/" => function($match) {
+            return "=window.loc" . $match[1];
         },
         "/(?<!var)([.}; ]location.replace\((['\"]))([^\)]+)(['\"])\)/" => function($match) use ($url, $self) {
             $replace_url = json_decode($match[2] . $match[3] . $match[4]);
@@ -313,6 +316,7 @@ if (isset($_REQUEST["action"])) {
             $uri_re = "/^(?:\/?(?:[A-Za-z0-9\\-._~!$&'()*+,;=:@]|%[0-9A-Fa-f]{2})+)+(\??(&?[^=]+=?[^=]*)*)$/";
             $var_plus =  "/^([\$A-Z_][0-9A-Z_\$]*|\s+|\+)+$/i"; // some site have string concatenetion src="+e+"
             $target_re = "/(target\s*=\s*[\"'])[^\"']*([\"'])/";
+            $match[1] = preg_replace("/integrity\s*=\s*([\"'])[^'\"]*\\1/", "", $match[1]);
             if (preg_match("/target=/", $match[1])) {
                 $match[1] = preg_replace($target_re, '$1_self$2"', $match[1]);
             }
@@ -345,9 +349,11 @@ if (isset($_REQUEST["action"])) {
         if (isset($_GET['__proxy_worker'])) {
             $page = file_get_contents("worker.js") . $page;
         }
+        log_message($_REQUEST['__proxy_url'] . "   " . $content_type);
         if (preg_match("/html|javascript/", $content_type)) { // javacript can contain html in strings
             $page = preg_replace_callback_array($replace, $page);
             if (preg_match("/html/", $content_type)) {
+                log_message('html');
                 $page = preg_replace_callback_array($html_replace, $page);
             }
             if (preg_match("/javascript/", $content_type)) {

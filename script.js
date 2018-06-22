@@ -22,6 +22,7 @@ __proxy.location_proxy = function(location) {
             } else {
                 target[name] = __proxy.get_url(value);
             }
+            return true;
         },
         get: function(target, name) {
             if (typeof target[name] === 'function' && name === 'replace') {
@@ -219,6 +220,7 @@ document.addEventListener('mousedown', function(e) {
                 } else {
                     target[name] = value;
                 }
+                return true;
             },
             get: function(target, name) {
                 return target[name];
@@ -528,10 +530,6 @@ document.addEventListener('mousedown', function(e) {
         };
     })(window.getComputedStyle);
 })();
-
-
-
-
 (function(fetch) {
     window.fetch = function(url, options) {
         return fetch.call(null, __proxy.get_url(url), options || {});
@@ -568,17 +566,17 @@ document.addEventListener('mousedown', function(e) {
         if (history.pushState) {
             var pushState = history.pushState;
             history.pushState = function(state, title, url) {
-                console.log(url);
-                pushState.apply(history, [].slice.call(arguments));
                 __proxy.post_data(__proxy.absolute_url(url));
+                url = __proxy.get_url(url);
+                pushState.call(history, state, title, url);
             };
         }
         if (history.replaceState) {
             var replaceState = history.replaceState;
             history.replaceState = function(state, title, url) {
-                console.log(url);
-                replaceState.apply(history, [].slice.call(arguments));
                 __proxy.post_data(__proxy.absolute_url(url), {replace: true});
+                url = __proxy.get_url(url);
+                replaceState.call(history, state, title, url);
             };
         }
     }
