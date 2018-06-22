@@ -206,6 +206,7 @@ document.addEventListener('mousedown', function(e) {
 });
 (function(open) {
     XMLHttpRequest.prototype.open = function(method, filepath, sync) {
+        console.log(filepath);
         open.call(this, method, __proxy.get_url(filepath), sync);
     };
 })(XMLHttpRequest.prototype.open);
@@ -247,7 +248,7 @@ document.addEventListener('mousedown', function(e) {
         if (!string) {
             return string;
         }
-        var re = /url\((['"])(.*?)\1\)/g;
+        var re = /url\((['"]?)(.*?)\1\)/g;
         var m = string.match(re);
         if (m) {
             return string.replace(re, function(all, quote, url) {
@@ -261,21 +262,18 @@ document.addEventListener('mousedown', function(e) {
             return string;
         }
     }
-    if (window.sheet) {
-        if (sheet.insertRule) {   // all browsers, except IE before version 9
-            var insertRule = sheet.insertRule;
-            sheet.insertRule = function(style) {
-                style = fix_style_urls(style);
-                return insertRule.apply(sheet, [].slice.call(arguments));
+    (function(insertRule, addRule) {
+        // all browsers, except IE before version 9
+        if (insertRule) {
+            CSSStyleSheet.prototype.insertRule = function(style, index) {
+                return insertRule.call(this, fix_style_urls(style), index);
             };
-        } else if (sheet.addRule) { // Internet Explorer before version 9
-            var addRule = sheet.addRule;
-            sheet.addRule = function(rule, style) {
-                style = fix_style_urls(style);
-                return addRule.apply(sheet, [].slice.call(arguments));
+        } else if (addRule) {
+            CSSStyleSheet.prototype.addRule = function(rule, style, index) {
+                return addRule.call(this, rule, fix_style_urls(style), index);
             };
         }
-    }
+    })(CSSStyleSheet.prototype.insertRule, CSSStyleSheet.prototype.addRule);
     function fix_html(html) {
         if (html.match(attr_re)) {
             html = html.replace(attr_re, function(all, prefix, url, postfix) {
@@ -570,6 +568,7 @@ document.addEventListener('mousedown', function(e) {
         if (history.pushState) {
             var pushState = history.pushState;
             history.pushState = function(state, title, url) {
+                console.log(url);
                 pushState.apply(history, [].slice.call(arguments));
                 __proxy.post_data(__proxy.absolute_url(url));
             };
@@ -577,6 +576,7 @@ document.addEventListener('mousedown', function(e) {
         if (history.replaceState) {
             var replaceState = history.replaceState;
             history.replaceState = function(state, title, url) {
+                console.log(url);
                 replaceState.apply(history, [].slice.call(arguments));
                 __proxy.post_data(__proxy.absolute_url(url), {replace: true});
             };
