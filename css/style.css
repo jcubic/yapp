@@ -1,10 +1,10 @@
-.ui-dialog .ui-dialog-content iframe {
+.box iframe {
     border: none;
     overflow: scroll;
     width: 100%;
     height: calc(100% - 36px);
 }
-.ui-dialog .ui-dialog-content input {
+.box input {
     display: inline;
     width: calc(100% - 106px);
     box-sizing: border-box;
@@ -53,10 +53,10 @@ iframe {
     outline: none;
 }
 .toolbar button.disabled {
-	filter: alpha(opacity=50);
-	-moz-opacity: 0.5;
-	-khtml-opacity: 0.5;
-	opacity: 0.5;
+    filter: alpha(opacity=50);
+    -moz-opacity: 0.5;
+    -khtml-opacity: 0.5;
+    opacity: 0.5;
     cursor: default;
 }
 .toolbar button.refresh {
@@ -73,67 +73,67 @@ button.clear_cookies {
             transform: translateY(-50%);
 }
 .search {
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	-webkit-transform: translate(-50%, -50%);
-	    -ms-transform: translate(-50%, -50%);
-	        transform: translate(-50%, -50%);
-	font-size: 16px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%, -50%);
+        -ms-transform: translate(-50%, -50%);
+            transform: translate(-50%, -50%);
+    font-size: 16px;
 }
 .search input, .button {
-	border: 1px solid #dcdcdc;
-	line-height: 1.3em;
-	font-size: 1em;
-	padding: 0.4em 1em;
-	outline: none;
-	-webkit-box-shadow: inset 0px 1px 0px 0px #ffffff;
-	   -moz-box-shadow: inset 0px 1px 0px 0px #ffffff;
-	        box-shadow: inset 0px 1px 0px 0px #ffffff;
+    border: 1px solid #dcdcdc;
+    line-height: 1.3em;
+    font-size: 1em;
+    padding: 0.4em 1em;
+    outline: none;
+    -webkit-box-shadow: inset 0px 1px 0px 0px #ffffff;
+       -moz-box-shadow: inset 0px 1px 0px 0px #ffffff;
+            box-shadow: inset 0px 1px 0px 0px #ffffff;
 }
 .search #query {
     -webkit-border-radius: 20px 0 0 20px;
     -moz-border-radius: 20px 0 0 20px;
-	border-radius: 20px 0 0 20px;
-	margin-right: -10px;
-	border-right: none;
+    border-radius: 20px 0 0 20px;
+    margin-right: -10px;
+    border-right: none;
 }
 .search #submit {
     -webkit-border-radius: 0 20px 20px 0;
     -moz-border-radius: 0 20px 20px 0;
-	border-radius: 0 20px 20px 0;
+    border-radius: 0 20px 20px 0;
 }
 .button {
     -webkit-border-radius: 20px;
     -moz-border-radius: 20px;
-	border-radius: 20px;
+    border-radius: 20px;
 }
 .search #submit, .button {
-	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #ededed), color-stop(1, #dfdfdf) );
-	background: -moz-linear-gradient( center top, #ededed 5%, #dfdfdf 100% );
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ededed', endColorstr='#dfdfdf');
-	background-color: #ededed;
-	text-indent: 0;
-	display: inline-block;
-	color: #777777;
-	font-family: arial;
-	font-size: 15px;
-	font-weight: bold;
-	font-style: normal;
-	text-decoration: none;
-	text-align: center;
-	text-shadow: 1px 1px 0px #ffffff;
-	cursor: pointer;
+    background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #ededed), color-stop(1, #dfdfdf) );
+    background: -moz-linear-gradient( center top, #ededed 5%, #dfdfdf 100% );
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#ededed', endColorstr='#dfdfdf');
+    background-color: #ededed;
+    text-indent: 0;
+    display: inline-block;
+    color: #777777;
+    font-family: arial;
+    font-size: 15px;
+    font-weight: bold;
+    font-style: normal;
+    text-decoration: none;
+    text-align: center;
+    text-shadow: 1px 1px 0px #ffffff;
+    cursor: pointer;
 }
 .search #submit:hover, .button:hover {
-	background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #dfdfdf), color-stop(1, #ededed) );
-	background: -moz-linear-gradient( center top, #dfdfdf 5%, #ededed 100% );
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dfdfdf', endColorstr='#ededed');
-	background-color: #dfdfdf;
+    background: -webkit-gradient( linear, left top, left bottom, color-stop(0.05, #dfdfdf), color-stop(1, #ededed) );
+    background: -moz-linear-gradient( center top, #dfdfdf 5%, #ededed 100% );
+    filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#dfdfdf', endColorstr='#ededed');
+    background-color: #dfdfdf;
 }
 .search #submit:active, .button:active {
-	position: relative;
-	top: 1px;
+    position: relative;
+    top: 1px;
 }
 .clear_cookies:active {
     -webkit-transform: translateY(calc(-50% + 1px));
