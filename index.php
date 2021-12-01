@@ -7,7 +7,7 @@
  *           |_|   |_|
  *   Yet Another Php Proxy
  *
- * Copyright (c) 2016-2018 Jakub Jankiewicz <https://jcubic.pl/me>
+ * Copyright (c) 2016-2021 Jakub Jankiewicz <https://jcubic.pl/me>
  *
  * Released under MIT license <https://opensource.org/licenses/MIT>
  */
@@ -258,7 +258,7 @@ if (isset($_REQUEST["action"])) {
             }
         }
     );
-    $any_attr = "[\w-]+(?:\s*=\s*[\"'][^\"']*[\"'])?";
+    $any_attr = "[\w-]+(?:\s*=\s*[\"']?[^\"'\s]*[\"']?)?";
     $html_replace = array(
         "/(<style[^>]*>)(.*?)(<\/style>)/s" => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[2]);
@@ -294,8 +294,8 @@ if (isset($_REQUEST["action"])) {
         "/(?<!var)([.}; ])(window.)?location((.href)?\s*=)/" => function($match) {
             return $match[1] . "loc" . $match[2];
         },
-        "/=\s*window.location([;, ])/" => function($match) {
-            return "=window.loc" . $match[1];
+        "/([\(=]\s*)(window|document).location([;,. \)])/" => function($match) {
+            return $match[1] . "window.loc" . $match[3];
         },
         "/(?<!var)([.}; ]location.replace\((['\"]))([^\)]+)(['\"])\)/" => function($match) use ($url, $self) {
             $replace_url = json_decode($match[2] . $match[3] . $match[4]);
@@ -308,8 +308,8 @@ if (isset($_REQUEST["action"])) {
             // facebook
             return "document.__" . $match[1];
         },
-        "/(<(?:$tags)(?:\s+$any_attr)*\s*(?:$attrs)=[\"'])([^'\"]+)([\"'][^>]*>)/" => function($match) use ($self, $url) {
-            if (preg_match("%\\\/%", $match[2]) || !preg_match("%/%", $match[2])) {
+        "/(<(?:$tags)(?:\s+$any_attr)*\s*(?:$attrs)=[\"']?)([^'\"\s]+)([\"']?[^>]*>)/" => function($match) use ($self, $url) {
+            if (preg_match("%\\\/%", $match[2])) {
                 return $match[0];
             }
             $url_re = "/^(https?:)?\/\//";
