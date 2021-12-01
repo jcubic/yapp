@@ -240,7 +240,7 @@ if (isset($_REQUEST["action"])) {
     $url = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
     $content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
     if (preg_match("/javascript/", $content_type)) {
-        $page = "// source: " . $url . "\n" . $page;
+        $page = "// ref: " . $url . "\n" . $page;
     }
     $httpcode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
@@ -286,12 +286,13 @@ if (isset($_REQUEST["action"])) {
 
     $js_replace = array(
         "%(//\s*(#\s*sourceMappingURL\s*=\s*|source:\s*))(.*)\s*%" => function($match) use ($url, $self) {
+            print_r($url);
             return $match[1] . $self . proxy_url($url, $match[3]) . "\n";
         }
     );
 
     $replace = array(
-        "/(?<!var)([.}; ])(window.)?location((.href)?\s*=)/" => function($match) {
+        "/(?<!var)(?:[.}; ]?)(window.)?location((.href)?\s*=)/" => function($match) {
             return $match[1] . "loc" . $match[2];
         },
         "/([\(=]\s*)(window|document).location([;,. \)])/" => function($match) {
