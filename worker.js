@@ -6,7 +6,7 @@
  *           |_|   |_|
  *   Yet Another Php Proxy
  *
- * Copyright (c) 2016-2018 Jakub Jankiewicz <https://jcubic.pl/me>
+ * Copyright (c) 2016-2021 Jakub Jankiewicz <https://jcubic.pl/me>
  *
  * Released under MIT license <https://opensource.org/licenses/MIT>
  */
