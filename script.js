@@ -15,23 +15,34 @@
 
 var __proxy = __proxy || {};
 __proxy.location_proxy = function(location) {
+    var url = __proxy.parse_url(location.href);
+    var props = ['hash','hostname','href','port','pathname','protocol'];
     return new Proxy(location, {
         set: function(target, name, value) {
             if (value.match(/__proxy_url/)) {
                 target[name] = value;
             } else {
                 target[name] = __proxy.get_url(value);
+                url = __proxy.parse_url(value);
             }
             return true;
         },
         get: function(target, name) {
             if (typeof target[name] === 'function' && name === 'replace') {
-                var fn = function(url) {
-                    target['href'] = __proxy.get_url(url);
+                var fn = function(new_url) {
+                    target['href'] = __proxy.get_url(new_url);
+                    if (new_url.match(/__proxy_url/)) {
+                        console.log('set');
+                    } else {
+                        url = __proxy.parse_url(new_url);
+                    }
                 };
                 fn.toString = function() {
                     return 'function () { [native code] }';
                 };
+            }
+            if (props.indexOf(name) !== -1) {
+                //return url[name];
             }
             return target[name];
         }
@@ -177,15 +188,19 @@ __proxy.post_data = function(url, options) {
     }
 };
 if (window.parent) {
-    (function(window, postMessage) {
-        window.parent.postMessage = function(message, origin) {
-            origin = '*';
-            // some page was sending post message to parent that was failing because of different origin
-            return postMessage.apply(window.parent, [].slice.call(arguments));
-        };
-    })(window, window.parent.postMessage);
-    // location is replaced by loc.href by php
-    window.parent.loc = __proxy.location_proxy(window.parent.location);
+    try {
+        (function(window, postMessage) {
+            window.parent.postMessage = function(message, origin) {
+                origin = '*';
+                // some page was sending post message to parent that was failing because of different origin
+                return postMessage.apply(window.parent, [].slice.call(arguments));
+            };
+            // ignores
+        })(window, window.parent.postMessage);
+        // location is replaced by loc.href by php
+        window.parent.loc = __proxy.location_proxy(window.parent.location);
+    } catch(e) {
+    }
 }
 var loc = __proxy.location_proxy(window.location);
 if (window.top) {
