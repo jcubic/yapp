@@ -16,13 +16,15 @@ ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-define('__DEBUG__', false);
+define('__DEBUG__', true);
 
 $log = fopen("debug.log", "a");
+
 if (__DEBUG__) {
 } else {
     $log = null;
 }
+
 function log_message($str) {
     global $log;
     if (__DEBUG__) {
@@ -37,11 +39,13 @@ function get_self() {
     }
     return 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}{$uri}";
 }
+
 function encodeURI($uri) {
     return preg_replace_callback("/[^0-9a-z_.!~*'();,\/@&+$#-]/i", function($match) {
         return sprintf('%%%02X', ord($match[0]));
     }, $uri);
 }
+
 function proxy_url($page_url, $url) {
     $parsed = parse_url($page_url);
     if (preg_match("/^(javascript:|data:)/", $url)) {
@@ -61,6 +65,7 @@ function proxy_url($page_url, $url) {
     $url = preg_replace("%(?<!http:)(?<!https:)//%", "/", $url);
     return 'base64:' . base64_encode(preg_replace("/&amp;/", "&", $url));
 }
+
 function get_params() {
     $data = array();
     foreach ($_GET as $key => $value) {
@@ -70,10 +75,10 @@ function get_params() {
     }
     return http_build_query($data);
 }
+
 function is_bot() {
     return preg_match("/spider|bot/i", $_SERVER['HTTP_USER_AGENT']);
 }
-
 
 function session_init() {
     $cookie_name = "PROXY_SESSION_ID";
@@ -286,7 +291,6 @@ if (isset($_REQUEST["action"])) {
 
     $js_replace = array(
         "%(//\s*(#\s*sourceMappingURL\s*=\s*|source:\s*))(.*)\s*%" => function($match) use ($url, $self) {
-            print_r($url);
             return $match[1] . $self . proxy_url($url, $match[3]) . "\n";
         }
     );
