@@ -567,6 +567,24 @@ document.addEventListener('mousedown', function(e) {
             });
         };
     }
+    ['SharedWorker', 'Worker'].forEach(function(name) {
+        var Worker = window[name];
+        if (Worker) {
+            window[name] = function(url, ...args) {
+                url = __proxy.get_url(url);
+                return new Worker(url, ...args);
+            };
+        }
+    });
+    if (window.CSS && 'paintWorklet' in CSS) {
+        (function(addModule) {
+            CSS.paintWorklet.addModule = function(url, ...args) {
+                url = __proxy.get_url(url);
+                args.unshift(url);
+                return addModule.apply(CSS.paintWorklet, args);
+            };
+        })(CSS.paintWorklet.addModule);
+    }
 })();
 (function(sendBeacon) {
     if (sendBeacon) {
