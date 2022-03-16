@@ -275,7 +275,7 @@ if (isset($_REQUEST["action"])) {
             }
         }
     );
-    $any_attr = "[\w-]+(?:\s*=\s*[\"']?[^\"'\s]*[\"']?)?";
+    $any_attr = "[\w-]+(?:\s*=\s*(?:[\"'][^\"']*[\"']|[^\s]*)?";
     $html_replace = array(
         "/(<style[^>]*>)(.*?)(<\/style>)/s" => function($match) use ($style_replace) {
             $style = preg_replace_callback_array($style_replace, $match[2]);
