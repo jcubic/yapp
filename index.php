@@ -32,12 +32,24 @@ function log_message($str) {
     }
 }
 
+function is_https() {
+    // apache
+    if (isset($_SERVER['HTTPS'])) {
+        return true;
+    }
+    // heroku
+    if (isset($_SERVER['HTTP_X_FORWARDED_PORT']) && isset($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+        return $_SERVER['HTTP_X_FORWARDED_PORT'] == 443 || $_SERVER['HTTP_X_FORWARDED_PROTO'] == 'https';
+    }
+    return false;
+}
+
 function get_self() {
     $uri = preg_replace("/__proxy_url=.*/", "__proxy_url=", $_SERVER['REQUEST_URI']);
     if (!preg_match("/\?/", $uri)) {
         $uri .= "?__proxy_url=";
     }
-    return 'http' . (isset($_SERVER['HTTPS']) ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}{$uri}";
+    return 'http' . (is_https() ? 's' : '') . '://' . "{$_SERVER['HTTP_HOST']}{$uri}";
 }
 
 function encodeURI($uri) {
