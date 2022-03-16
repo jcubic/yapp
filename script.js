@@ -523,6 +523,15 @@ document.addEventListener('mousedown', function(e) {
             }
         };
     })(Object.prototype.toString);
+    ['MutationObserver', 'ResizeObserver', 'IntersectionObserver'].forEach(function(name) {
+        if (typeof window[name] !== 'undefined') {
+            var proto = window[name].prototype;
+            var observe = proto.observe;
+            proto.observe = function(node, options) {
+                return observe.call(this, real_node(node), options);
+            };
+        }
+    });
     if (typeof window.MutationObserver !== 'undefined') {
         (function(observe) {
             MutationObserver.prototype.observe = function(node, options) {
