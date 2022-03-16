@@ -51,7 +51,7 @@ self.addEventListener('message', function message(event) {
         })(window.importScripts);
         self.removeEventListener('message', message);
     }
-};
+});
 (function(fetch) {
     if (fetch) {
         window.fetch = function(url, options) {
