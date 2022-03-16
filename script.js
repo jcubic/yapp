@@ -542,13 +542,6 @@ document.addEventListener('mousedown', function(e) {
             };
         })(IntersectionObserver);
     }
-    if (typeof window.MutationObserver !== 'undefined') {
-        (function(observe) {
-            MutationObserver.prototype.observe = function(node, options) {
-                return observe.call(this, real_node(node), options);
-            };
-        })(MutationObserver.prototype.observe);
-    }
     if (typeof window.CanvasRenderingContext2D !== 'undefined') {
         (function(drawImage) {
             window.CanvasRenderingContext2D.prototype.drawImage = function(image) {
