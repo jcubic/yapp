@@ -58,4 +58,4 @@ self.addEventListener('message', function message(event) {
             return fetch.call(null, __proxy.get_url(url), options || {});
         };
     }
-})(window.fetch);
+})(self.fetch);
