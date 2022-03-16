@@ -1,0 +1,13 @@
+{
+    "name": "kuba/yapp",
+    "description": "Yet Another PHP Proxy",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Jakub Jankiewicz",
+            "email": "jcubic@onet.pl"
+        }
+    ],
+    "require": {}
+}

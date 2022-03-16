@@ -1,3 +1,5 @@
 sessions/*
 *~
 !sessions/.htaccess
+
+/vendor/
