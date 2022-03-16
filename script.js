@@ -526,10 +526,14 @@ document.addEventListener('mousedown', function(e) {
     ['MutationObserver', 'ResizeObserver', 'IntersectionObserver'].forEach(function(name) {
         if (typeof window[name] !== 'undefined') {
             var proto = window[name].prototype;
-            var observe = proto.observe;
-            proto.observe = function(node, options) {
-                return observe.call(this, real_node(node), options);
-            };
+            ['observe', 'unobserve'].forEach(function(name) {
+                var fn = proto[name];
+                proto[name] = function(node) {
+                    var args = [].slice.call(arguments, 1);
+                    args.unshift(real_node(node));
+                    return fn.apply(this, args);
+                };
+            });
         }
     });
     if (typeof window.IntersectionObserver !== 'undefined') {
