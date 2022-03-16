@@ -532,6 +532,16 @@ document.addEventListener('mousedown', function(e) {
             };
         }
     });
+    if (typeof window.IntersectionObserver !== 'undefined') {
+        (function(observer) {
+            window.IntersectionObserver = function(handler, options) {
+                if (options && options.root) {
+                    options.root = real_node(options.root);
+                }
+                return new observer(handler, options);
+            };
+        })(IntersectionObserver);
+    }
     if (typeof window.MutationObserver !== 'undefined') {
         (function(observe) {
             MutationObserver.prototype.observe = function(node, options) {
