@@ -415,7 +415,6 @@ if (isset($_REQUEST["action"])) {
         <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
       <![endif]-->
       <link href="css/style.css" rel="stylesheet"/>
-      <script src="https://cdn.rawgit.com/github/fetch/master/fetch.js"></script>
     </head>
     <body>
       <form action="" method="GET" class="search">
