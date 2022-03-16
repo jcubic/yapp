@@ -388,6 +388,7 @@ if (isset($_REQUEST["action"])) {
   <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
       <meta charset="utf-8" />
+      <!-- <?=json_encode($_SERVER)?> -->
       <title>Yapp Proxy demo using jQuery UI dialog and iframe</title>
       <meta name="Description" content=""/>
       <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
