@@ -576,6 +576,11 @@ document.addEventListener('mousedown', function(e) {
         return fetch.call(null, __proxy.get_url(url), options || {});
     };
 })(window.fetch);
+(function(open) {
+    XMLHttpRequest.prototype.open = function(method, url, ...rest) {
+        return open.call(this, method, __proxy.get_url(url), ...rest);
+    };
+})(XMLHttpRequest.prototype.open);
 (function() {
     if ('ServiceWorkerContainer' in window) {
         var register = ServiceWorkerContainer.prototype.register;
