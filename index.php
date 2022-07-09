@@ -309,10 +309,10 @@ if (isset($_REQUEST["action"])) {
 
     $replace = array(
         "/(?<!var)(?:[.}; ]?)(window.)?location((.href)?\s*=)/" => function($match) {
-            return $match[1] . "loc" . $match[2];
+            return $match[1] . "__location__" . $match[2];
         },
         "/([\(=]\s*)(window|document).location([;,. \)])/" => function($match) {
-            return $match[1] . "window.loc" . $match[3];
+            return $match[1] . "window.__location__" . $match[3];
         },
         "/(?<!var)([.}; ]location.replace\((['\"]))([^\)]+)(['\"])\)/" => function($match) use ($url, $self) {
             $replace_url = json_decode($match[2] . $match[3] . $match[4]);

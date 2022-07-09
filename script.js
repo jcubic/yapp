@@ -202,7 +202,7 @@ if (window.parent) {
     } catch(e) {
     }
 }
-var loc = __proxy.location_proxy(window.location);
+var __location__ = __proxy.location_proxy(window.location);
 if (window.top) {
     self = window.top; // fix for stackoverflow frame check
     global = window;
@@ -446,7 +446,12 @@ document.addEventListener('mousedown', function(e) {
     (function() {
         var original;
         var name;
-        "matchesSelector:mozMatchesSelector:webkitMatchesSelector:msMatchesSelector".split(":").forEach(function(fn) {
+        [
+            'matchesSelector',
+            'mozMatchesSelector',
+            'webkitMatchesSelector',
+            'msMatchesSelector'
+        ].forEach(function(fn) {
             if (HTMLElement.prototype[fn]) {
                 name = fn;
                 original = HTMLElement.prototype[fn];
@@ -495,7 +500,12 @@ document.addEventListener('mousedown', function(e) {
                 };
             }
         });
-        ['querySelectorAll', 'getElementsByTagName', 'getElementsByClassName', 'getElementsByName'].forEach(function(fun) {
+        [
+            'querySelectorAll',
+            'getElementsByTagName',
+            'getElementsByClassName',
+            'getElementsByName'
+        ].forEach(function(fun) {
             if (document[fun]) {
                 var original = document[fun];
                 document[fun] = function() {
