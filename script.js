@@ -638,8 +638,10 @@ document.addEventListener('mousedown', function(e) {
         if (history.replaceState) {
             var replaceState = history.replaceState;
             history.replaceState = function(state, title, url) {
-                __proxy.post_data(__proxy.absolute_url(url), {replace: true});
-                url = __proxy.get_url(url);
+                if (url) {
+                    __proxy.post_data(__proxy.absolute_url(url), {replace: true});
+                    url = __proxy.get_url(url);
+                }
                 replaceState.call(history, state, title, url);
             };
         }
