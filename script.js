@@ -204,7 +204,6 @@ if (window.parent) {
 }
 var __location__ = __proxy.location_proxy(window.location);
 if (window.top) {
-    self = window.top; // fix for stackoverflow frame check
     global = window;
 }
 document.addEventListener('mousedown', function(e) {
